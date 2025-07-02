@@ -14,7 +14,9 @@ import { getStockNews, getStockQuote, type NewsItem, type StockData } from "../s
 interface TickerDetailPanelProps {
   ticker: string
   onClose: () => void
-  onChatAction: (action: string, ticker: string) => void
+  // onChatAction: (action: string, ticker: string) => void
+  onChatAction: (action: string, payload: { ticker: string; message?: string; error?: string }) => void
+
 }
 
 export default function TickerDetailPanel({ ticker, onClose, onChatAction }: TickerDetailPanelProps) {
@@ -56,8 +58,47 @@ export default function TickerDetailPanel({ ticker, onClose, onChatAction }: Tic
     }
   }
 
+// const handleActionClick = async (action: string) => {
+//   setActionLoading(action); 
+//   let prompt = "";
+
+//   switch (action) {
+//     case "Trade Ideas":
+//       prompt = getTradeIdeasPrompt(ticker);
+//       break;
+//     case "Price Chart":
+//       prompt = getPriceChartPrompt(ticker);
+//       break;
+//     case "Recent News":
+//       prompt = getRecentNewsPrompt(ticker);
+//       break;
+//     case "Analysis":
+//       prompt = getFundamentalAnalysisPrompt(ticker);
+//       break;
+//     default:
+//       prompt = `Give me information on ${ticker}`;
+//   }
+
+//   try {
+//     const stream = streamChatResponse(prompt, ticker);
+//     let fullMessage = "";
+
+//     for await (const chunk of stream) {
+//       fullMessage += chunk;
+//       console.log(chunk); // Optional: stream to UI
+//     }
+
+//     console.log("🟢 Full Response:", fullMessage); // Replace with setChatMessages etc.
+//   } catch (err) {
+//     console.error("Chat stream failed:", err);
+//   }
+//   setActionLoading(null);
+//   onChatAction(action, ticker);
+//   onClose();
+// };
+
 const handleActionClick = async (action: string) => {
-  setActionLoading(action); 
+  setActionLoading(action);
   let prompt = "";
 
   switch (action) {
@@ -77,21 +118,31 @@ const handleActionClick = async (action: string) => {
       prompt = `Give me information on ${ticker}`;
   }
 
+  let fullMessage = "";
+  let currentMessage = "";
+
+  // Start the streaming state
+  onChatAction("streaming", { ticker, message: "" });
+
   try {
     const stream = streamChatResponse(prompt, ticker);
-    let fullMessage = "";
 
     for await (const chunk of stream) {
       fullMessage += chunk;
-      console.log(chunk); // Optional: stream to UI
+      currentMessage += chunk;
+
+      // Show live updates in Chat UI
+      onChatAction("streaming", { ticker, message: currentMessage });
     }
 
-    console.log("🟢 Full Response:", fullMessage); // Replace with setChatMessages etc.
+    // Finalize message
+    onChatAction("complete", { ticker, message: fullMessage });
   } catch (err) {
     console.error("Chat stream failed:", err);
+    onChatAction("error", { ticker, error: "Failed to get response" });
   }
+
   setActionLoading(null);
-  onChatAction(action, ticker);
   onClose();
 };
 

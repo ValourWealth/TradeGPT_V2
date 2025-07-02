@@ -23,6 +23,8 @@ export default function TickerDetailPanel({ ticker, onClose, onChatAction }: Tic
   const [loading, setLoading] = useState(true)
   const [newsLoading, setNewsLoading] = useState(true)
   const [hideKeyEvents, setHideKeyEvents] = useState(false)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+
   
 
   useEffect(() => {
@@ -55,6 +57,7 @@ export default function TickerDetailPanel({ ticker, onClose, onChatAction }: Tic
   }
 
 const handleActionClick = async (action: string) => {
+  setActionLoading(action); 
   let prompt = "";
 
   switch (action) {
@@ -87,7 +90,7 @@ const handleActionClick = async (action: string) => {
   } catch (err) {
     console.error("Chat stream failed:", err);
   }
-
+  setActionLoading(null);
   onChatAction(action, ticker);
   onClose();
 };
@@ -206,6 +209,7 @@ const handleActionClick = async (action: string) => {
           <button
             onClick={() => handleActionClick("Trade Ideas")}
             className="flex items-center gap-2 p-3 bg-[#2e2e2e] hover:bg-[#1e1e1e] rounded-lg transition-colors"
+            disabled={actionLoading !== null}
           >
             <Lightbulb className="w-4 h-4" />
             <span className="text-sm">Trade Ideas</span>

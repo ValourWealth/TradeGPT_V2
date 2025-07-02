@@ -97,6 +97,7 @@ const handleActionClick = async (action: string) => {
 
 
 
+
   const handleNewsClick = (newsItem: NewsItem) => {
     if (newsItem.url) {
       window.open(newsItem.url, '_blank', 'noopener,noreferrer')

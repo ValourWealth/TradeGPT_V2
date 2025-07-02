@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
 import { Menu } from "lucide-react"
-import SidebarLeft from "./components/SidebarLeft"
+import { useState } from "react"
 import ChatArea from "./components/ChatArea"
-import WatchlistSidebar from "./components/WatchlistSidebar"
+import SidebarLeft from "./components/SidebarLeft"
 import TickerDetailPanel from "./components/TickerDetailPanel"
+import WatchlistSidebar from "./components/WatchlistSidebar"
 
 export default function TradeGPTApp() {
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null)
@@ -76,7 +76,7 @@ export default function TradeGPTApp() {
       <div
         className={`
           fixed lg:relative lg:translate-x-0 z-40 lg:z-auto
-          w-80 h-full border-r border-gray-700 bg-gray-900
+          w-70 h-full border-r border-gray-700 bg-gray-900
           transition-transform duration-300 ease-in-out
           ${leftSidebarOpen ? "translate-x-0" : "-translate-x-full"}
           lg:block

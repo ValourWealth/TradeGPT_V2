@@ -47,4 +47,6 @@ body {
   animation: bounce 1.4s infinite ease-in-out both;
 }
 
-
+.border-gray-700 {
+  border: none !important;
+}

@@ -1,5 +1,3 @@
-// ✅ File: services/promptHelpers.ts
-
 export function getTradeIdeasPrompt(ticker: string): string {
   return `You are TradeGPT, an advanced trading assistant. Provide multiple trade ideas for ${ticker} using real options data if available.
 
@@ -75,29 +73,31 @@ import {
   getTradeIdeasPrompt,
 } from "../services/promptHelpers";
 
-// export function handleChatAction(action: string, ticker: string) {
-//   let systemPrompt = "";
+export const universalSystemPrompt = `
+You are TradeGPT — a professional but friendly trading assistant and market analyst.
 
-//   switch (action) {
-//     case "Price Chart":
-//       systemPrompt = getPriceChartPrompt(ticker);
-//       break;
-//     case "Recent News":
-//       systemPrompt = getRecentNewsPrompt(ticker);
-//       break;
-//     case "Trade Ideas":
-//       systemPrompt = getTradeIdeasPrompt(ticker);
-//       break;
-//     case "Analysis":
-//       systemPrompt = getFundamentalAnalysisPrompt(ticker);
-//       break;
-//     default:
-//       systemPrompt = `Give me information on ${ticker}`;
-//   }
+You can handle a wide range of user queries, including:
 
-//   // Send to chat system
-//   streamChatResponse(systemPrompt, ticker);
-// }
+- General conversation (e.g. greetings, asking for help)
+- Stock or crypto analysis (fundamentals, technicals, options)
+- Trading strategy suggestions
+- Explaining financial concepts in simple terms
+- Responding with context based on recent market trends
+
+When the user provides a stock ticker or asks for analysis:
+- Be accurate and structured
+- Use sections like Summary, Technical Analysis, Trade Plan, Risk Note
+- Avoid placeholders (like $XXX) — use real examples if data is available
+- Format clearly with bullet points or headlines when needed
+
+When the user asks a casual or non-ticker question:
+- Respond informally and helpfully
+- Keep it short and conversational, but informative
+
+Tone: Professional but approachable. Keep the conversation intelligent, clear, and user-friendly.
+
+Always end with a helpful follow-up if appropriate (e.g., “Would you like an options breakdown too?” or “Let me know which ticker you’d like to explore.”)
+`;
 
 export async function handleChatAction(action: string, ticker: string) {
   let userPrompt = "";
@@ -117,21 +117,27 @@ export async function handleChatAction(action: string, ticker: string) {
       userPrompt = getFundamentalAnalysisPrompt(ticker);
       break;
     default:
-      userPrompt = `Give me information on ${ticker}`;
+      // userPrompt = `Give me information on ${ticker}`;
+      userPrompt = universalSystemPrompt;
   }
 
   // 🔥 Fetch Alpha Vantage live data
   alphaData = await fetchAlphaVantageData(ticker); // already made in chatApi.ts
 
-  // 🧠 Combine it into system prompt
+  // ✅ Clean system prompt without Alpha Vantage
+  //   const systemPrompt = `You are TradeGPT, a professional market analyst and trading assistant.
+  // Be structured and insightful. Focus on ${ticker}.`;
+  // const systemPrompt = universalSystemPrompt;
+
+  //   // 🧠 Combine it into system prompt
   const systemPrompt = `You are TradeGPT, a professional market analyst and trading assistant.
-Use the following real-time data for your analysis of ${ticker}:
+  Use the following real-time data for your analysis of ${ticker}:
 
---- BEGIN LIVE DATA ---
-${alphaData}
---- END LIVE DATA ---
+  --- BEGIN LIVE DATA ---
+  ${alphaData}
+  --- END LIVE DATA ---
 
-Be structured and insightful.`;
+  // Be structured and insightful.`;
 
   // ✅ Send it to DeepSeek API with real data
   streamChatResponse(userPrompt, ticker, systemPrompt);

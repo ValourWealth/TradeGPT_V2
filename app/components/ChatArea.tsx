@@ -4,6 +4,7 @@ import { Loader2, Send } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import chatData from "../../mock/chat.json"
 import { fetchAlphaVantageData, streamChatResponse } from "../services/chatApi"
+import { universalSystemPrompt } from "../services/promptHelpers"
 import ChatMessage from "./ChatMessage"
 import PromptSuggestions from "./PromptSuggestions"
 import RecommendedPromptsModal from "./RecommendedPromptsModal"
@@ -219,28 +220,51 @@ function extractTickers(text: string): string[] {
     abortControllerRef.current.abort();
   }
 
-  // Detect tickers from message
   const detectedTickers = extractTickers(content);
-  let alphaData = "";
+let alphaData = "";
 
-  if (detectedTickers.length > 0) {
-    const results = await Promise.all(
-      detectedTickers.map(async (symbol) => {
-        const result = await fetchAlphaVantageData(symbol);
-        return `--- ${symbol} ---\n${result}`;
-      })
-    );
-    alphaData = results.join("\n\n");
-  }
+if (detectedTickers.length > 0) {
+  const results = await Promise.all(
+    detectedTickers.map(async (symbol) => {
+      const result = await fetchAlphaVantageData(symbol);
+      return `--- ${symbol} ---\n${result}`;
+    })
+  );
+  alphaData = results.join("\n\n");
+}
 
-  const systemPrompt = `
-You are TradeGPT, a professional market analyst.
-Use the following real-time stock data to respond insightfully.
+const systemPrompt = `
+${universalSystemPrompt}
 
---- BEGIN REAL-TIME DATA ---
+${detectedTickers.length > 0 ? `
+--- BEGIN LIVE DATA ---
 ${alphaData}
---- END DATA ---
+--- END LIVE DATA ---
+` : ""}
 `;
+
+//   // Detect tickers from message
+//   const detectedTickers = extractTickers(content);
+//   let alphaData = "";
+
+//   if (detectedTickers.length > 0) {
+//     const results = await Promise.all(
+//       detectedTickers.map(async (symbol) => {
+//         const result = await fetchAlphaVantageData(symbol);
+//         return `--- ${symbol} ---\n${result}`;
+//       })
+//     );
+//     alphaData = results.join("\n\n");
+//   }
+
+//   const systemPrompt = `
+// You are TradeGPT, a professional market analyst.
+// Use the following real-time stock data to respond insightfully.
+
+// --- BEGIN REAL-TIME DATA ---
+// ${alphaData}
+// --- END DATA ---
+// `;
 
   // Create user message
   // const userMessage = {
@@ -296,7 +320,9 @@ const userMessage = {
     abortControllerRef.current = new AbortController();
     let fullResponse = "";
 
-    for await (const chunk of streamChatResponse(systemPrompt, detectedTickers[0])) {
+    for await (const chunk of streamChatResponse(content, detectedTickers[0], systemPrompt)){
+
+    // for await (const chunk of streamChatResponse(systemPrompt, detectedTickers[0])) {
       if (abortControllerRef.current?.signal.aborted) break;
 
       fullResponse += chunk;
@@ -426,16 +452,7 @@ const userMessage = {
               className="flex-1 bg-transparent outline-none text-white placeholder-gray-400 disabled:opacity-50 text-sm lg:text-base"
             />
             <div className="flex items-center gap-2 ml-2 lg:ml-4">
-              {/* <button className="p-2 hover:bg-gray-700 rounded-lg" disabled={isTyping}>
-                <Paperclip className="w-4 h-4 lg:w-5 lg:h-5 text-gray-400" />
-              </button>
-              <button
-                className="hidden lg:flex items-center gap-2 px-3 py-2 bg-[#1e1e1e] hover:bg-gray-600 rounded-lg text-sm"
-                disabled={isTyping}
-              >
-                <Settings className="w-4 h-4" />
-                Customize Response
-              </button> */}
+
               <button
                 onClick={() => handleSendMessage(inputValue)}
                 disabled={!inputValue.trim() || isTyping}

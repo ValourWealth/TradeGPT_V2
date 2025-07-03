@@ -1,31 +1,3 @@
-// "use client"
-
-// import { Cloud } from "lucide-react"
-// import userData from "../../mock/user.json"
-
-// export default function UserProfileCard() {
-//   const { user } = userData
-
-//   return (
-//     <div className="flex items-center gap-3">
-//       <img src={user.avatar || "/placeholder.svg"} alt={user.username} className="w-8 h-8 rounded-full bg-gray-600" />
-//       <div className="flex-1">
-//         <div className="font-medium text-sm">{user.username}</div>
-//         <div className="flex items-center gap-2 text-xs text-gray-400">
-//           <span>{user.weather.temperature}°C</span>
-//           <span>|</span>
-//           <div className="flex items-center gap-1">
-//             <Cloud className="w-3 h-3" />
-//             <span>{user.weather.condition}</span>
-//           </div>
-//           <span>|</span>
-//           <span>{user.weather.time}</span>
-//         </div>
-//       </div>
-//     </div>
-//   )
-// }
-
 import {
   Cloud,
   Crown,
@@ -37,26 +9,48 @@ import {
   User,
   X
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function EnhancedUserProfile() {
   const [isOpen, setIsOpen] = useState(false);
+  const token = localStorage.getItem("access");
+  const [userData, setUserData] = useState<any>(null);
+
+
   
-  // Mock user data based on the profile shown
-  const userData = {
-    username: "prode",
-    email: "prode@gmail.com",
-    subscription: "platinum",
-    country: "American Samoa",
-    state: "ejrhrstn",
-    phone: "8457635",
-    avatar: null,
-    weather: {
-      temperature: 24,
-      condition: "Cloudy",
-      time: "2:30 PM"
+  useEffect(() => {
+  const fetchUserProfile = async () => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
+
+    try {
+      const res = await fetch(`https://tradegptv2backend-production.up.railway.app/api/chat/user/?token=${token}`);
+      const data = await res.json();
+      if (!data.error) {
+        setUserData({
+          username: data.username,
+          email: data.email,
+          subscription: data.subscription_status,
+          country: data.country,
+          state: data.state,
+          phone: data.phone_number,
+          avatar: data.profile_photo,
+          weather: {
+            temperature: 24,
+            condition: "Cloudy",
+            time: "2:30 PM",
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch user profile:", err);
     }
   };
+
+  fetchUserProfile();
+}, []);
+
+  if (!userData) return null;
 
   const ProfileCard = () => (
     <div className="flex items-center gap-3 cursor-pointer hover:bg-[#2e2e2e] p-2 rounded-lg transition-colors"

@@ -22,7 +22,7 @@ export default function SignupPage() {
   };
 
   const handleSocialSignup = (provider: string) => {
-    console.log('Signup with ${provider}');
+    console.log(`Signup with ${provider}`);
     // Implement social signup logic
   };
 
@@ -75,6 +75,19 @@ export default function SignupPage() {
             Log in here
           </button>
         </p>
+
+        {/* Continue with Google */}
+        <div className="mt-8">
+          <button
+            onClick={() => handleSocialSignup("Google")}
+            className="w-full bg-transparent border border-gray-600 hover:bg-gray-800 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-3"
+          >
+            <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
+              <span className="text-xs font-bold text-gray-900">G</span>
+            </div>
+            Continue with Google
+          </button>
+        </div>
       </div>
     </div>
   );

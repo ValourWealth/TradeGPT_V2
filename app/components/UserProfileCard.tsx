@@ -204,7 +204,7 @@ export default function EnhancedUserProfile() {
     const fetchUserProfile = async () => {
       if (typeof window === "undefined") return; // prevent SSR crash
 
-      const token = localStorage.getItem("access");
+      const token = localStorage.getItem("accessToken");
       if (!token) return;
 
       try {

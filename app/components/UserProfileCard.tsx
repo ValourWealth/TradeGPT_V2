@@ -200,39 +200,49 @@ export default function EnhancedUserProfile() {
   const [isOpen, setIsOpen] = useState(false);
   const [userData, setUserData] = useState<any>(null);
 
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (typeof window === "undefined") return; // prevent SSR crash
+useEffect(() => {
+  if (typeof window === "undefined") return;
 
-      const token = localStorage.getItem("accessToken");
-      if (!token) return;
+  const url = new URL(window.location.href);
+  const tokenFromURL = url.searchParams.get("token");
 
-      try {
-        const res = await fetch(`https://tradegptv2backend-production.up.railway.app/api/chat/user/?token=${token}`);
-        const data = await res.json();
-        if (!data.error) {
-          setUserData({
-            username: data.username,
-            email: data.email,
-            subscription: data.subscription_status,
-            country: data.country,
-            state: data.state,
-            phone: data.phone_number,
-            avatar: data.profile_photo,
-            weather: {
-              temperature: 24,
-              condition: "Cloudy",
-              time: "2:30 PM",
-            }
-          });
-        }
-      } catch (err) {
-        console.error("Failed to fetch user profile:", err);
+  if (tokenFromURL) {
+    localStorage.setItem("accessToken", tokenFromURL);
+
+    // Optional: clean token from URL
+    window.history.replaceState({}, document.title, "/");
+  }
+
+  const fetchUserProfile = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    try {
+      const res = await fetch(`https://tradegptv2backend-production.up.railway.app/api/chat/user/?token=${token}`);
+      const data = await res.json();
+      if (!data.error) {
+        setUserData({
+          username: data.username,
+          email: data.email,
+          subscription: data.subscription_status,
+          country: data.country,
+          state: data.state,
+          phone: data.phone_number,
+          avatar: data.profile_photo,
+          weather: {
+            temperature: 24,
+            condition: "Cloudy",
+            time: "2:30 PM",
+          }
+        });
       }
-    };
+    } catch (err) {
+      console.error("Failed to fetch user profile:", err);
+    }
+  };
 
-    fetchUserProfile();
-  }, []);
+  fetchUserProfile();
+}, []);
 
   // ❗ Prevent render until userData is loaded
   if (!userData) return null;

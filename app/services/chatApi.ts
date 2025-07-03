@@ -462,10 +462,10 @@ export async function* streamChatResponse(
       const { done, value } = await reader.read();
       if (done) {
         // ✅ Append promo line after complete streaming
-
+        yield `\n\n---\n🔍 For deeper analysis and insights, visit the [Valour Wealth Analyst Hub](https://valourwealth.com).`;
         break;
       }
-      yield `\n\n---\n🔍 For deeper analysis and insights, visit the [Valour Wealth Analyst Hub](https://valourwealth.com).`;
+
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split("\n");
       buffer = lines.pop() || "";

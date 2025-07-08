@@ -396,7 +396,7 @@ if (sessionId) {
       Authorization: `Bearer ${localStorage.getItem("access")}`,
     },
     body: JSON.stringify({
-      sender: "user",
+      role: "user",
       content: content,
     }),
   });
@@ -457,7 +457,7 @@ if (sessionId) {
              Authorization: `Bearer ${localStorage.getItem("access")}`,
           },
           body: JSON.stringify({
-            sender: "assistant",
+            role: "assistant",
             content: fullResponse,
           }),
         });

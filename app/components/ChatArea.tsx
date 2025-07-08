@@ -325,27 +325,51 @@ ${alphaData}
 ` : ""}
   `;
 
-  // Create new session if needed
-  if (!activeSessionId || currentSession === "new") {
-    try {
-      const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "");
-      const res = await fetch('https://tradegptv2backend-production.up.railway.app/api/sessions/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json',
-           Authorization: `Bearer ${localStorage.getItem("access")}`,
-         },
+  // // Create new session if needed
+  // if (!activeSessionId || currentSession === "new") {
+  //   try {
+  //     const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "");
+  //     const res = await fetch('https://tradegptv2backend-production.up.railway.app/api/sessions/', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json',
+  //          Authorization: `Bearer ${localStorage.getItem("access")}`,
+  //        },
         
-        body: JSON.stringify({ title: sessionTitle }),
-      });
-      const data = await res.json();
-      const newSessionId = data.id;
-      setActiveSessionId(newSessionId);
-      onSessionUpdate?.(newSessionId, []);
-    } catch (err) {
-      console.error("Session creation failed", err);
-      return;
-    }
+  //       body: JSON.stringify({ title: sessionTitle }),
+  //     });
+  //     const data = await res.json();
+  //     const newSessionId = data.id;
+  //     setActiveSessionId(newSessionId);
+  //     onSessionUpdate?.(newSessionId, []);
+  //   } catch (err) {
+  //     console.error("Session creation failed", err);
+  //     return;
+  //   }
+  // }
+
+  let sessionId = activeSessionId;
+
+  
+if (!sessionId || currentSession === "new") {
+  try {
+    const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "");
+    const res = await fetch('https://tradegptv2backend-production.up.railway.app/api/sessions/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem("access")}`,
+      },
+      body: JSON.stringify({ title: sessionTitle }),
+    });
+    const data = await res.json();
+    sessionId = data.id;
+    setActiveSessionId(sessionId);
+    onSessionUpdate?.(sessionId, []);
+  } catch (err) {
+    console.error("Session creation failed", err);
+    return;
   }
+}
 
   const userMessage = {
     id: `msg-${Date.now()}`,
@@ -359,23 +383,38 @@ ${alphaData}
   setIsTyping(true);
   setStreamingMessage("");
 
+if (sessionId) {
+  await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${sessionId}/messages/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("access")}`,
+    },
+    body: JSON.stringify({
+      role: "user",
+      content: content,
+    }),
+  });
+}
+
+
   // ✅ Save user message to backend
-  if (activeSessionId) {
-    try {
-      await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${activeSessionId}/messages/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" ,
-           Authorization: `Bearer ${localStorage.getItem("access")}`,
-        },
-        body: JSON.stringify({
-          role: "user",
-     content: content, // ✅ MUST BE `message`
-  })
-      });
-    } catch (err) {
-      console.error("Failed to save user message:", err);
-    }
-  }
+  // if (activeSessionId) {
+  //   try {
+  //     await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${activeSessionId}/messages/`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" ,
+  //          Authorization: `Bearer ${localStorage.getItem("access")}`,
+  //       },
+  //       body: JSON.stringify({
+  //         role: "user",
+  //    content: content, // ✅ MUST BE `message`
+  // })
+  //     });
+  //   } catch (err) {
+  //     console.error("Failed to save user message:", err);
+  //   }
+  // }
 
   const aiMessageId = `msg-${Date.now()}-ai`;
   setCurrentStreamingId(aiMessageId);
@@ -405,9 +444,9 @@ ${alphaData}
     }
 
     // ✅ Save final AI response to backend
-    if (activeSessionId) {
+    if (sessionId) {
       try {
-        await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${activeSessionId}/messages/`, {
+        await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${sessionId}/messages/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" ,
              Authorization: `Bearer ${localStorage.getItem("access")}`,

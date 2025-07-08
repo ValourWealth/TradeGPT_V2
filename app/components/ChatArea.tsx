@@ -289,7 +289,7 @@ ${alphaData}
   onSessionUpdate?.(newSessionId, [])
 }
 
-// ✅ Move this here
+
 const userMessage = {
   id: `msg-${Date.now()}`,
   type: "user",

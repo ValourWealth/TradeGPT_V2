@@ -124,7 +124,7 @@ export default function LoginPage() {
       localStorage.setItem("access", data.access)
       localStorage.setItem("refresh", data.refresh)
 
-      router.push("/dashboard") // or wherever your main app is
+      router.push("/") // or wherever your main app is
     } catch (err) {
       setError("Something went wrong. Please try again.")
     } finally {

@@ -368,6 +368,7 @@ ${alphaData}
            Authorization: `Bearer ${localStorage.getItem("access")}`,
         },
         body: JSON.stringify({
+          role: "user",
     message: content, // ✅ MUST BE `message`
   })
       });
@@ -412,7 +413,7 @@ ${alphaData}
              Authorization: `Bearer ${localStorage.getItem("access")}`,
           },
           body: JSON.stringify({
-            sender: "ai",
+            role: "ai",
             content: fullResponse,
           }),
         });

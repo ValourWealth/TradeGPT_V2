@@ -31,7 +31,7 @@ export default function SignupPage() {
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/signup/`, {
+      "https://tradegptv2backend-production.up.railway.app/api/signup/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

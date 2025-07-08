@@ -368,9 +368,8 @@ ${alphaData}
            Authorization: `Bearer ${localStorage.getItem("access")}`,
         },
         body: JSON.stringify({
-          sender: "user",
-          content,
-        }),
+    message: content, // ✅ MUST BE `message`
+  })
       });
     } catch (err) {
       console.error("Failed to save user message:", err);
@@ -413,7 +412,7 @@ ${alphaData}
              Authorization: `Bearer ${localStorage.getItem("access")}`,
           },
           body: JSON.stringify({
-            sender: "ai",
+            // sender: "ai",
             content: fullResponse,
           }),
         });

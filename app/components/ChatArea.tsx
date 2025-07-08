@@ -59,7 +59,7 @@ function extractTickers(text: string): string[] {
   const fetchSessionMessages = async () => {
     if (currentSession && currentSession !== "new") {
       try {
-        const res = await fetch(`/api/sessions/${currentSession}/messages/`);
+        const res = await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${currentSession}/messages/`);
         const data = await res.json();
         setMessages(data);
         setActiveSessionId(currentSession);
@@ -315,7 +315,7 @@ ${alphaData}
   if (!activeSessionId || currentSession === "new") {
     try {
       const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "");
-      const res = await fetch('/api/sessions/', {
+      const res = await fetch('https://tradegptv2backend-production.up.railway.app/api/sessions/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: sessionTitle }),
@@ -345,7 +345,7 @@ ${alphaData}
   // ✅ Save user message to backend
   if (activeSessionId) {
     try {
-      await fetch(`/api/sessions/${activeSessionId}/messages/`, {
+      await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${activeSessionId}/messages/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -388,7 +388,7 @@ ${alphaData}
     // ✅ Save final AI response to backend
     if (activeSessionId) {
       try {
-        await fetch(`/api/sessions/${activeSessionId}/messages/`, {
+        await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${activeSessionId}/messages/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

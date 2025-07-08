@@ -135,12 +135,12 @@
 
 "use client"
 
-import { useState } from "react"
 import { Menu } from "lucide-react"
-import SidebarLeft from "./components/SidebarLeft"
+import { useState } from "react"
 import ChatArea from "./components/ChatArea"
-import WatchlistSidebar from "./components/WatchlistSidebar"
+import SidebarLeft from "./components/SidebarLeft"
 import TickerDetailPanel from "./components/TickerDetailPanel"
+import WatchlistSidebar from "./components/WatchlistSidebar"
 
 export default function TradeGPTApp() {
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null)

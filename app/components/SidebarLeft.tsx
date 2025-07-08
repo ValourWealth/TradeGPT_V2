@@ -56,23 +56,22 @@ useEffect(() => {
   fetchSessions();
 }, []);
 
-
-
 const previous7Days = sessions.filter((session) => {
-  const sessionDate = new Date(session.timestamp)
-  const now = new Date()
-  const diffTime = Math.abs(now.getTime() - sessionDate.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  return diffDays <= 7
-})
+  const sessionDate = new Date(session.created_at);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - sessionDate.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays <= 7;
+});
 
 const previous30Days = sessions.filter((session) => {
-  const sessionDate = new Date(session.timestamp)
-  const now = new Date()
-  const diffTime = Math.abs(now.getTime() - sessionDate.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  return diffDays > 7 && diffDays <= 30
-})
+  const sessionDate = new Date(session.created_at);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - sessionDate.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays > 7 && diffDays <= 30;
+});
+
 
   // const previous7Days = chatData.sessions.filter((session) => {
   //   const sessionDate = new Date(session.timestamp)
@@ -286,7 +285,12 @@ const handleSaveRename = async (sessionId: string) => {
             className="flex-1"
           >
             <div className="text-sm truncate pr-8">{session.title}</div>
-            <div className="text-xs text-gray-400">{new Date(session.timestamp).toLocaleDateString()}</div>
+            <div className="text-xs text-gray-400">
+  {new Date(session.created_at).toLocaleDateString()}
+</div>
+
+            {/* <div className="text-xs text-gray-400">{new Date(session.timestamp).toLocaleDateString()}</div>
+             */}
           </div>
           
           {/* Options button - appears on hover */}

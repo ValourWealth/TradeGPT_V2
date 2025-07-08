@@ -2,6 +2,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import PhoneInput from 'react-phone-input-2'
+import 'react-phone-input-2/lib/style.css'
+
 export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -103,19 +106,28 @@ export default function SignupPage() {
           />
 
           {/* Phone Number */}
-          <div className="flex">
-            <span className="bg-gray-800 text-white px-4 py-3 border border-gray-700 rounded-l-lg">
-              🇺🇸 +1
-            </span>
-            <input
-              type="tel"
-              placeholder="Phone Number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="flex-1 bg-gray-800 border border-l-0 border-gray-700 text-white placeholder-gray-400 px-4 py-3 rounded-r-lg"
-              required
-            />
-          </div>
+         <PhoneInput
+  country={'us'}
+  value={phone}
+  onChange={(phone) => setPhone(phone)}
+  inputStyle={{
+    width: '100%',
+    backgroundColor: '#1f2937',
+    border: '1px solid #374151',
+    color: 'white',
+    borderRadius: '0.5rem',
+    paddingLeft: '3rem',
+  }}
+  buttonStyle={{
+    backgroundColor: '#1f2937',
+    borderRight: '1px solid #374151',
+  }}
+  containerStyle={{ width: '100%' }}
+  inputProps={{
+    name: 'phone',
+    required: true,
+  }}
+/>
 
           {/* Password */}
           <input

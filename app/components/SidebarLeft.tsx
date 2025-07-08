@@ -41,6 +41,8 @@ const fetchSessions = async () => {
     const res = await axios.get(`${baseUrl}/api/sessions/`, {
       headers: {
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+
       },
     });
 
@@ -124,6 +126,8 @@ const handleNewChatClick = async () => {
       {
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+
         },
       }
     );
@@ -155,6 +159,8 @@ const handleDeleteSession = async (sessionId: string) => {
     await axios.delete(`${baseUrl}/api/sessions/${sessionId}/`, {
       headers: {
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+
       },
     });
     setSessions(sessions.filter((s) => s.id !== sessionId));
@@ -199,6 +205,7 @@ const handleSaveRename = async (sessionId: string) => {
       {
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
       }
     );

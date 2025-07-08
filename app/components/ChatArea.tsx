@@ -59,7 +59,13 @@ function extractTickers(text: string): string[] {
   const fetchSessionMessages = async () => {
     if (currentSession && currentSession !== "new") {
       try {
-        const res = await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${currentSession}/messages/`);
+        const res = await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${currentSession}/messages/`, {
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${localStorage.getItem("access")}`,
+  },
+});
+
         const data = await res.json();
 
         // DEBUG LOG: check for any Promises
@@ -325,7 +331,10 @@ ${alphaData}
       const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "");
       const res = await fetch('https://tradegptv2backend-production.up.railway.app/api/sessions/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',
+           Authorization: `Bearer ${localStorage.getItem("access")}`,
+         },
+        
         body: JSON.stringify({ title: sessionTitle }),
       });
       const data = await res.json();
@@ -355,7 +364,9 @@ ${alphaData}
     try {
       await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${activeSessionId}/messages/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" ,
+           Authorization: `Bearer ${localStorage.getItem("access")}`,
+        },
         body: JSON.stringify({
           sender: "user",
           content,
@@ -398,7 +409,9 @@ ${alphaData}
       try {
         await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${activeSessionId}/messages/`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" ,
+             Authorization: `Bearer ${localStorage.getItem("access")}`,
+          },
           body: JSON.stringify({
             sender: "ai",
             content: fullResponse,

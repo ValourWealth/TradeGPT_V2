@@ -36,7 +36,7 @@ const baseUrl = "https://tradegptv2backend-production.up.railway.app";
 
 const fetchSessions = async () => {
   try {
-    const token = localStorage.getItem("accessToken"); // or your token key
+    const token = localStorage.getItem("access"); // or your token key
 
     const res = await axios.get(`${baseUrl}/api/sessions/`, {
       headers: {
@@ -119,7 +119,7 @@ const previous30Days = sessions.filter((session) => {
   // };
 const handleNewChatClick = async () => {
   try {
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("access");
     const res = await axios.post(
       `${baseUrl}/api/sessions/`,
       {},
@@ -155,7 +155,7 @@ const handleNewChatClick = async () => {
 
 const handleDeleteSession = async (sessionId: string) => {
   try {
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("access");
     await axios.delete(`${baseUrl}/api/sessions/${sessionId}/`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -196,7 +196,7 @@ const handleDeleteSession = async (sessionId: string) => {
   // }
 const handleSaveRename = async (sessionId: string) => {
   try {
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("access");
     const res = await axios.patch(
       `${baseUrl}/api/sessions/${sessionId}/`,
       {

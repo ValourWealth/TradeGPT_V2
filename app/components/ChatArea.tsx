@@ -61,6 +61,14 @@ function extractTickers(text: string): string[] {
       try {
         const res = await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${currentSession}/messages/`);
         const data = await res.json();
+
+        // DEBUG LOG: check for any Promises
+        for (const msg of data) {
+          if (msg.content instanceof Promise) {
+            console.error("❌ Message content is a Promise!", msg);
+          }
+        }
+
         setMessages(data);
         setActiveSessionId(currentSession);
       } catch (err) {

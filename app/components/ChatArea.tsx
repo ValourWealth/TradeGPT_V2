@@ -40,20 +40,42 @@ function extractTickers(text: string): string[] {
 }
 
 
+  // useEffect(() => {
+  //   if (currentSession === "new" || currentSession === null) {
+  //     // Clear messages for new chat
+  //     setMessages([])
+  //     setActiveSessionId(null)
+  //   } else if (currentSession && currentSession !== activeSessionId) {
+  //     // Load different session if it's actually different
+  //     const session = chatData.sessions.find((s) => s.id === currentSession)
+  //     if (session) {
+  //       setMessages(session.messages)
+  //       setActiveSessionId(currentSession)
+  //     }
+  //   }
+  // }, [currentSession])
+
   useEffect(() => {
-    if (currentSession === "new" || currentSession === null) {
-      // Clear messages for new chat
-      setMessages([])
-      setActiveSessionId(null)
-    } else if (currentSession && currentSession !== activeSessionId) {
-      // Load different session if it's actually different
-      const session = chatData.sessions.find((s) => s.id === currentSession)
-      if (session) {
-        setMessages(session.messages)
-        setActiveSessionId(currentSession)
+  const fetchSessionMessages = async () => {
+    if (currentSession && currentSession !== "new") {
+      try {
+        const res = await fetch(`/api/sessions/${currentSession}/messages/`);
+        const data = await res.json();
+        setMessages(data);
+        setActiveSessionId(currentSession);
+      } catch (err) {
+        console.error("Failed to load messages", err);
       }
+    } else {
+      setMessages([]);
+      setActiveSessionId(null);
     }
-  }, [currentSession])
+  };
+
+  fetchSessionMessages();
+}, [currentSession]);
+
+
 
   useEffect(() => {
     if (pendingAction) {
@@ -103,116 +125,163 @@ function extractTickers(text: string): string[] {
     }
   }, [messages, activeSessionId])
 
-  // const handleSendMessage = async (content: string, ticker?: string) => {
-  //   if (!content.trim()) return
+  
 
-  //   // Cancel any ongoing streaming
-  //   if (abortControllerRef.current) {
-  //     abortControllerRef.current.abort()
-  //   }
+//   const handleSendMessage = async (content: string, ticker?: string) => {
+//   if (!content.trim()) return;
 
-  //   // If this is a new chat (no active session), create one
-  //   if (!activeSessionId || currentSession === "new") {
-  //     const newSessionId = `session-${Date.now()}`
-  //     const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "")
-      
-  //     // Create new session
-  //     const newSession = {
-  //       id: newSessionId,
-  //       title: sessionTitle,
-  //       timestamp: new Date().toISOString(),
-  //       messages: []
-  //     }
-      
-  //     // Add to beginning of sessions array
-  //     chatData.sessions.unshift(newSession)
-  //     setActiveSessionId(newSessionId)
-      
-  //     // Notify parent component about the new session
-  //     onSessionUpdate?.(newSessionId, [])
-  //   }
+//   // Cancel ongoing stream if any
+//   if (abortControllerRef.current) {
+//     abortControllerRef.current.abort();
+//   }
 
-  //   const userMessage = {
-  //     id: `msg-${Date.now()}`,
-  //     type: "user",
-  //     content,
-  //     timestamp: new Date().toISOString(),
-  //   }
+//   const detectedTickers = extractTickers(content);
+// let alphaData = "";
 
-  //   setMessages((prev) => [...prev, userMessage])
-  //   setInputValue("")
-  //   setIsTyping(true)
-  //   setStreamingMessage("")
+// if (detectedTickers.length > 0) {
+//   const results = await Promise.all(
+//     detectedTickers.map(async (symbol) => {
+//       const result = await fetchAlphaVantageData(symbol);
+//       return `--- ${symbol} ---\n${result}`;
+//     })
+//   );
+//   alphaData = results.join("\n\n");
+// }
 
-  //   // Create AI message placeholder
-  //   const aiMessageId = `msg-${Date.now()}-ai`
-  //   setCurrentStreamingId(aiMessageId)
+// const systemPrompt = `
+// ${universalSystemPrompt}
 
-  //   const aiMessage = {
-  //     id: aiMessageId,
-  //     type: "ai",
-  //     content: "",
-  //     timestamp: new Date().toISOString(),
-  //     completed: false,
-  //     hasNews: containsStockSymbol(content),
-  //     isStreaming: true,
-  //   }
+// ${detectedTickers.length > 0 ? `
+// --- BEGIN LIVE DATA ---
+// ${alphaData}
+// --- END LIVE DATA ---
+// ` : ""}
+// `;
 
-  //   setMessages((prev) => [...prev, aiMessage])
+// //   // Detect tickers from message
+// //   const detectedTickers = extractTickers(content);
+// //   let alphaData = "";
 
-  //   try {
-  //     abortControllerRef.current = new AbortController()
-  //     let fullResponse = ""
+// //   if (detectedTickers.length > 0) {
+// //     const results = await Promise.all(
+// //       detectedTickers.map(async (symbol) => {
+// //         const result = await fetchAlphaVantageData(symbol);
+// //         return `--- ${symbol} ---\n${result}`;
+// //       })
+// //     );
+// //     alphaData = results.join("\n\n");
+// //   }
 
-  //     for await (const chunk of streamChatResponse(content, ticker)) {
-  //       if (abortControllerRef.current?.signal.aborted) {
-  //         break
-  //       }
+// //   const systemPrompt = `
+// // You are TradeGPT, a professional market analyst.
+// // Use the following real-time stock data to respond insightfully.
 
-  //       fullResponse += chunk
-  //       setStreamingMessage(fullResponse)
+// // --- BEGIN REAL-TIME DATA ---
+// // ${alphaData}
+// // --- END DATA ---
+// // `;
 
-  //       // Update the message in real-time
-  //       setMessages((prev) => prev.map((msg) => (msg.id === aiMessageId ? { ...msg, content: fullResponse } : msg)))
-  //     }
+//   // Create user message
+//   // const userMessage = {
+//   //   id: `msg-${Date.now()}`,
+//   //   type: "user",
+//   //   content,
+//   //   timestamp: new Date().toISOString(),
+//   // };
+//   if (!activeSessionId || currentSession === "new") {
+//   const newSessionId = `session-${Date.now()}`
+//   const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "")
 
-  //     // Finalize the message
-  //     setMessages((prev) =>
-  //       prev.map((msg) =>
-  //         msg.id === aiMessageId
-  //           ? {
-  //               ...msg,
-  //               content: fullResponse,
-  //               completed: true,
-  //               isStreaming: false,
-  //               analysis: generateAnalysisFromResponse(fullResponse, content),
-  //             }
-  //           : msg,
-  //       ),
-  //     )
-  //   } catch (error) {
-  //     console.error("Error streaming response:", error)
-  //     setMessages((prev) =>
-  //       prev.map((msg) =>
-  //         msg.id === aiMessageId
-  //           ? {
-  //               ...msg,
-  //               content: "I apologize, but I'm having trouble providing a response right now. Please try again.",
-  //               completed: true,
-  //               isStreaming: false,
-  //             }
-  //           : msg,
-  //       ),
-  //     )
-  //   } finally {
-  //     setIsTyping(false)
-  //     setStreamingMessage("")
-  //     setCurrentStreamingId(null)
-  //     abortControllerRef.current = null
-  //   }
-  // }
+//   const newSession = {
+//     id: newSessionId,
+//     title: sessionTitle,
+//     timestamp: new Date().toISOString(),
+//     messages: [],
+//   }
 
-  const handleSendMessage = async (content: string, ticker?: string) => {
+//   chatData.sessions.unshift(newSession)
+//   setActiveSessionId(newSessionId)
+//   onSessionUpdate?.(newSessionId, [])
+// }
+
+
+// const userMessage = {
+//   id: `msg-${Date.now()}`,
+//   type: "user",
+//   content,
+//   timestamp: new Date().toISOString(),
+// };
+
+
+//   setMessages((prev) => [...prev, userMessage]);
+//   setInputValue("");
+//   setIsTyping(true);
+//   setStreamingMessage("");
+
+//   const aiMessageId = `msg-${Date.now()}-ai`;
+//   setCurrentStreamingId(aiMessageId);
+//   const aiMessage = {
+//     id: aiMessageId,
+//     type: "ai",
+//     content: "",
+//     timestamp: new Date().toISOString(),
+//     completed: false,
+//     hasNews: detectedTickers.length > 0,
+//     isStreaming: true,
+//   };
+//   setMessages((prev) => [...prev, aiMessage]);
+
+//   try {
+//     abortControllerRef.current = new AbortController();
+//     let fullResponse = "";
+
+//     for await (const chunk of streamChatResponse(content, detectedTickers[0], systemPrompt)){
+
+//     // for await (const chunk of streamChatResponse(systemPrompt, detectedTickers[0])) {
+//       if (abortControllerRef.current?.signal.aborted) break;
+
+//       fullResponse += chunk;
+//       setStreamingMessage(fullResponse);
+//       setMessages((prev) =>
+//         prev.map((msg) => (msg.id === aiMessageId ? { ...msg, content: fullResponse } : msg))
+//       );
+//     }
+
+//     setMessages((prev) =>
+//       prev.map((msg) =>
+//         msg.id === aiMessageId
+//           ? {
+//               ...msg,
+//               content: fullResponse,
+//               completed: true,
+//               isStreaming: false,
+//               analysis: generateAnalysisFromResponse(fullResponse, content),
+//             }
+//           : msg
+//       )
+//     );
+//   } catch (err) {
+//     setMessages((prev) =>
+//       prev.map((msg) =>
+//         msg.id === aiMessageId
+//           ? {
+//               ...msg,
+//               content: "Sorry, I couldn't complete that request right now.",
+//               completed: true,
+//               isStreaming: false,
+//             }
+//           : msg
+//       )
+//     );
+//   } finally {
+//     setIsTyping(false);
+//     setStreamingMessage("");
+//     setCurrentStreamingId(null);
+//     abortControllerRef.current = null;
+//   }
+// };
+
+const handleSendMessage = async (content: string, ticker?: string) => {
   if (!content.trim()) return;
 
   // Cancel ongoing stream if any
@@ -221,87 +290,73 @@ function extractTickers(text: string): string[] {
   }
 
   const detectedTickers = extractTickers(content);
-let alphaData = "";
+  let alphaData = "";
 
-if (detectedTickers.length > 0) {
-  const results = await Promise.all(
-    detectedTickers.map(async (symbol) => {
-      const result = await fetchAlphaVantageData(symbol);
-      return `--- ${symbol} ---\n${result}`;
-    })
-  );
-  alphaData = results.join("\n\n");
-}
+  if (detectedTickers.length > 0) {
+    const results = await Promise.all(
+      detectedTickers.map(async (symbol) => {
+        const result = await fetchAlphaVantageData(symbol);
+        return `--- ${symbol} ---\n${result}`;
+      })
+    );
+    alphaData = results.join("\n\n");
+  }
 
-const systemPrompt = `
+  const systemPrompt = `
 ${universalSystemPrompt}
-
 ${detectedTickers.length > 0 ? `
 --- BEGIN LIVE DATA ---
 ${alphaData}
 --- END LIVE DATA ---
 ` : ""}
-`;
+  `;
 
-//   // Detect tickers from message
-//   const detectedTickers = extractTickers(content);
-//   let alphaData = "";
-
-//   if (detectedTickers.length > 0) {
-//     const results = await Promise.all(
-//       detectedTickers.map(async (symbol) => {
-//         const result = await fetchAlphaVantageData(symbol);
-//         return `--- ${symbol} ---\n${result}`;
-//       })
-//     );
-//     alphaData = results.join("\n\n");
-//   }
-
-//   const systemPrompt = `
-// You are TradeGPT, a professional market analyst.
-// Use the following real-time stock data to respond insightfully.
-
-// --- BEGIN REAL-TIME DATA ---
-// ${alphaData}
-// --- END DATA ---
-// `;
-
-  // Create user message
-  // const userMessage = {
-  //   id: `msg-${Date.now()}`,
-  //   type: "user",
-  //   content,
-  //   timestamp: new Date().toISOString(),
-  // };
+  // Create new session if needed
   if (!activeSessionId || currentSession === "new") {
-  const newSessionId = `session-${Date.now()}`
-  const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "")
-
-  const newSession = {
-    id: newSessionId,
-    title: sessionTitle,
-    timestamp: new Date().toISOString(),
-    messages: [],
+    try {
+      const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "");
+      const res = await fetch('/api/sessions/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: sessionTitle }),
+      });
+      const data = await res.json();
+      const newSessionId = data.id;
+      setActiveSessionId(newSessionId);
+      onSessionUpdate?.(newSessionId, []);
+    } catch (err) {
+      console.error("Session creation failed", err);
+      return;
+    }
   }
 
-  chatData.sessions.unshift(newSession)
-  setActiveSessionId(newSessionId)
-  onSessionUpdate?.(newSessionId, [])
-}
-
-
-const userMessage = {
-  id: `msg-${Date.now()}`,
-  type: "user",
-  content,
-  timestamp: new Date().toISOString(),
-};
-
+  const userMessage = {
+    id: `msg-${Date.now()}`,
+    type: "user",
+    content,
+    timestamp: new Date().toISOString(),
+  };
 
   setMessages((prev) => [...prev, userMessage]);
   setInputValue("");
   setIsTyping(true);
   setStreamingMessage("");
+
+  // ✅ Save user message to backend
+  if (activeSessionId) {
+    try {
+      await fetch(`/api/sessions/${activeSessionId}/messages/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sender: "user",
+          content,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to save user message:", err);
+    }
+  }
 
   const aiMessageId = `msg-${Date.now()}-ai`;
   setCurrentStreamingId(aiMessageId);
@@ -320,9 +375,7 @@ const userMessage = {
     abortControllerRef.current = new AbortController();
     let fullResponse = "";
 
-    for await (const chunk of streamChatResponse(content, detectedTickers[0], systemPrompt)){
-
-    // for await (const chunk of streamChatResponse(systemPrompt, detectedTickers[0])) {
+    for await (const chunk of streamChatResponse(content, detectedTickers[0], systemPrompt)) {
       if (abortControllerRef.current?.signal.aborted) break;
 
       fullResponse += chunk;
@@ -330,6 +383,22 @@ const userMessage = {
       setMessages((prev) =>
         prev.map((msg) => (msg.id === aiMessageId ? { ...msg, content: fullResponse } : msg))
       );
+    }
+
+    // ✅ Save final AI response to backend
+    if (activeSessionId) {
+      try {
+        await fetch(`/api/sessions/${activeSessionId}/messages/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sender: "ai",
+            content: fullResponse,
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to save AI message:", err);
+      }
     }
 
     setMessages((prev) =>
@@ -365,6 +434,8 @@ const userMessage = {
     abortControllerRef.current = null;
   }
 };
+
+
 
   const containsStockSymbol = (text: string) => {
     const stockSymbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "QQQ", "SPY"]

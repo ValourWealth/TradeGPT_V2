@@ -363,8 +363,13 @@ if (!sessionId || currentSession === "new") {
     });
     const data = await res.json();
     sessionId = data.id;
-    setActiveSessionId(sessionId);
-    onSessionUpdate?.(sessionId, []);
+    // setActiveSessionId(sessionId);
+    // onSessionUpdate?.(sessionId, []);
+    if (sessionId) {
+  setActiveSessionId(sessionId);
+  onSessionUpdate?.(sessionId, []);
+}
+
   } catch (err) {
     console.error("Session creation failed", err);
     return;
@@ -391,7 +396,7 @@ if (sessionId) {
       Authorization: `Bearer ${localStorage.getItem("access")}`,
     },
     body: JSON.stringify({
-      role: "user",
+      sender: "user",
       content: content,
     }),
   });
@@ -452,7 +457,7 @@ if (sessionId) {
              Authorization: `Bearer ${localStorage.getItem("access")}`,
           },
           body: JSON.stringify({
-            role: "assistant",
+            sender: "assistant",
             content: fullResponse,
           }),
         });

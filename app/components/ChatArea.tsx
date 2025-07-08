@@ -369,7 +369,7 @@ ${alphaData}
         },
         body: JSON.stringify({
           role: "user",
-    message: content, // ✅ MUST BE `message`
+     content: content, // ✅ MUST BE `message`
   })
       });
     } catch (err) {
@@ -413,7 +413,7 @@ ${alphaData}
              Authorization: `Bearer ${localStorage.getItem("access")}`,
           },
           body: JSON.stringify({
-            role: "ai",
+            role: "assistant",
             content: fullResponse,
           }),
         });

@@ -412,7 +412,7 @@ ${alphaData}
              Authorization: `Bearer ${localStorage.getItem("access")}`,
           },
           body: JSON.stringify({
-            // sender: "ai",
+            sender: "ai",
             content: fullResponse,
           }),
         });

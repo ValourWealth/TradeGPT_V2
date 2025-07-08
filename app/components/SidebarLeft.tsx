@@ -32,7 +32,7 @@ export default function SidebarLeft({
   const [editTitle, setEditTitle] = useState("")
   const [sessions, setSessions] = useState<any[]>([]);
 
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+const baseUrl = "https://tradegptv2backend-production.up.railway.app";
 const fetchSessions = async () => {
   try {
     const res = await axios.get(`${baseUrl}/api/sessions/`, {

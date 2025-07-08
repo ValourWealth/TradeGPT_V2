@@ -33,19 +33,27 @@ export default function SidebarLeft({
   const [sessions, setSessions] = useState<any[]>([]);
 
 const baseUrl = "https://tradegptv2backend-production.up.railway.app";
+
 const fetchSessions = async () => {
   try {
+    const token = localStorage.getItem("accessToken"); // or your token key
+
     const res = await axios.get(`${baseUrl}/api/sessions/`, {
-      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
+
     setSessions(res.data);
   } catch (error) {
     console.error("Failed to fetch sessions", error);
   }
 };
+
 useEffect(() => {
   fetchSessions();
 }, []);
+
 
 
 const previous7Days = sessions.filter((session) => {
@@ -107,11 +115,18 @@ const previous30Days = sessions.filter((session) => {
   //   console.log("New chat icon clicked!");
   //   handleSessionSelect("new");
   // };
-  const handleNewChatClick = async () => {
+const handleNewChatClick = async () => {
   try {
-    const res = await axios.post(`${baseUrl}/api/sessions/`, {}, {
-      withCredentials: true,
-    });
+    const token = localStorage.getItem("accessToken");
+    const res = await axios.post(
+      `${baseUrl}/api/sessions/`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     const newSession = res.data;
     setSessions([newSession, ...sessions]);
     onSessionSelect(newSession.id);
@@ -134,13 +149,15 @@ const previous30Days = sessions.filter((session) => {
   //   setShowOptions(null)
   // }
 
-
-  const handleDeleteSession = async (sessionId: string) => {
+const handleDeleteSession = async (sessionId: string) => {
   try {
+    const token = localStorage.getItem("accessToken");
     await axios.delete(`${baseUrl}/api/sessions/${sessionId}/`, {
-      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
-    setSessions(sessions.filter(s => s.id !== sessionId));
+    setSessions(sessions.filter((s) => s.id !== sessionId));
     if (currentSession === sessionId) {
       onSessionSelect("new");
     }
@@ -173,12 +190,19 @@ const previous30Days = sessions.filter((session) => {
   // }
 const handleSaveRename = async (sessionId: string) => {
   try {
-    const res = await axios.patch(`${baseUrl}/api/sessions/${sessionId}/`, {
-      title: editTitle.trim(),
-    }, {
-      withCredentials: true,
-    });
-    setSessions(sessions.map(s => (s.id === sessionId ? res.data : s)));
+    const token = localStorage.getItem("accessToken");
+    const res = await axios.patch(
+      `${baseUrl}/api/sessions/${sessionId}/`,
+      {
+        title: editTitle.trim(),
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    setSessions(sessions.map((s) => (s.id === sessionId ? res.data : s)));
     setEditingSession(null);
     setEditTitle("");
   } catch (err) {

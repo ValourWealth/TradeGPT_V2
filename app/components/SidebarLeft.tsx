@@ -35,7 +35,7 @@ export default function SidebarLeft({
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 const fetchSessions = async () => {
   try {
-    const res = await axios.get(`${baseUrl}/api/chat/sessions/`, {
+    const res = await axios.get(`${baseUrl}/api/sessions/`, {
       withCredentials: true,
     });
     setSessions(res.data);
@@ -109,7 +109,7 @@ const previous30Days = sessions.filter((session) => {
   // };
   const handleNewChatClick = async () => {
   try {
-    const res = await axios.post(`${baseUrl}/api/chat/sessions/`, {}, {
+    const res = await axios.post(`${baseUrl}/api/sessions/`, {}, {
       withCredentials: true,
     });
     const newSession = res.data;
@@ -137,7 +137,7 @@ const previous30Days = sessions.filter((session) => {
 
   const handleDeleteSession = async (sessionId: string) => {
   try {
-    await axios.delete(`${baseUrl}/api/chat/sessions/${sessionId}/`, {
+    await axios.delete(`${baseUrl}/api/sessions/${sessionId}/`, {
       withCredentials: true,
     });
     setSessions(sessions.filter(s => s.id !== sessionId));
@@ -173,7 +173,7 @@ const previous30Days = sessions.filter((session) => {
   // }
 const handleSaveRename = async (sessionId: string) => {
   try {
-    const res = await axios.patch(`${baseUrl}/api/chat/sessions/${sessionId}/`, {
+    const res = await axios.patch(`${baseUrl}/api/sessions/${sessionId}/`, {
       title: editTitle.trim(),
     }, {
       withCredentials: true,

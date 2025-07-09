@@ -3,11 +3,12 @@
 import { Loader2, Send } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import chatData from "../../mock/chat.json"
-import { fetchAlphaVantageData, streamChatResponse } from "../services/chatApi"
+import { fetchAlphaVantageData, fetchForexRate, streamChatResponse } from "../services/chatApi"
 import { universalSystemPrompt } from "../services/promptHelpers"
 import ChatMessage from "./ChatMessage"
 import PromptSuggestions from "./PromptSuggestions"
 import RecommendedPromptsModal from "./RecommendedPromptsModal"
+
 import TradingTrainingModal from "./TradingTrainingModal"; // make sure it's imported
 
 
@@ -33,6 +34,21 @@ export default function ChatArea({ currentSession, pendingAction, onActionProces
   const STOCK_TICKERS = [
   "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "QQQ", "SPY", "NFLX", "BA", "XOM"
 ];
+
+function extractForexPair(text: string): string | null {
+  const forexRegex = /\b([A-Z]{3})[\/\\\-]([A-Z]{3})\b/g;
+  const match = forexRegex.exec(text.toUpperCase());
+  if (match) {
+    const from = match[1];
+    const to = match[2];
+    return `${from}/${to}`;
+  }
+  return null;
+}
+
+
+
+
 // ============================================================================================
 function extractTickers(text: string): string[] {
   const words = text.toUpperCase().match(/\b[A-Z]{2,5}\b/g) || [];
@@ -284,18 +300,21 @@ function extractTickers(text: string): string[] {
 
 
 
+
 const handleSendMessage = async (content: string, ticker?: string) => {
   if (!content.trim()) return;
 
-  // Cancel ongoing stream if any
   if (abortControllerRef.current) {
     abortControllerRef.current.abort();
   }
 
   const detectedTickers = extractTickers(content);
+  const forexPair = extractForexPair(content);
   let alphaData = "";
 
-  if (detectedTickers.length > 0) {
+  if (forexPair) {
+    alphaData = await fetchForexRate(forexPair);
+  } else if (detectedTickers.length > 0) {
     const results = await Promise.all(
       detectedTickers.map(async (symbol) => {
         const result = await fetchAlphaVantageData(symbol);
@@ -305,65 +324,44 @@ const handleSendMessage = async (content: string, ticker?: string) => {
     alphaData = results.join("\n\n");
   }
 
-  const systemPrompt = detectedTickers.length > 0
-  ? `
+  const systemPrompt = (forexPair || detectedTickers.length > 0)
+    ? `
 You are TradeGPT — a professional market analyst.
 
-Use the following real-time data for your analysis of ${detectedTickers.join(", ")}:
+Use the following real-time data for your analysis:
 
 --- BEGIN LIVE DATA ---
 ${alphaData}
 --- END LIVE DATA ---
 
-Respond with insights and structure (e.g., Summary, Trade Plan, Risks).
-Avoid placeholders.
+Respond with insights. If it's Forex, include rate commentary, trends, and economic factors.
 `
-  : `
-${universalSystemPrompt}
-
-Respond informally if the user is chatting casually or asking general questions.
-`;
-
-
-//   const systemPrompt = `
-// ${universalSystemPrompt}
-// ${detectedTickers.length > 0 ? `
-// --- BEGIN LIVE DATA ---
-// ${alphaData}
-// --- END LIVE DATA ---
-// ` : ""}
-//   `;
-
-  
+    : `${universalSystemPrompt}`;
 
   let sessionId = activeSessionId;
 
-  
-if (!sessionId || currentSession === "new") {
-  try {
-    const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "");
-    const res = await fetch('https://tradegptv2backend-production.up.railway.app/api/sessions/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem("access")}`,
-      },
-      body: JSON.stringify({ title: sessionTitle }),
-    });
-    const data = await res.json();
-    sessionId = data.id;
-    // setActiveSessionId(sessionId);
-    // onSessionUpdate?.(sessionId, []);
-    if (sessionId) {
-  setActiveSessionId(sessionId);
-  onSessionUpdate?.(sessionId, []);
-}
-
-  } catch (err) {
-    console.error("Session creation failed", err);
-    return;
+  if (!sessionId || currentSession === "new") {
+    try {
+      const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "");
+      const res = await fetch('https://tradegptv2backend-production.up.railway.app/api/sessions/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem("access")}`,
+        },
+        body: JSON.stringify({ title: sessionTitle }),
+      });
+      const data = await res.json();
+      sessionId = data.id;
+      if (sessionId) {
+        setActiveSessionId(sessionId);
+        onSessionUpdate?.(sessionId, []);
+      }
+    } catch (err) {
+      console.error("Session creation failed", err);
+      return;
+    }
   }
-}
 
   const userMessage = {
     id: `msg-${Date.now()}`,
@@ -377,38 +375,16 @@ if (!sessionId || currentSession === "new") {
   setIsTyping(true);
   setStreamingMessage("");
 
-if (sessionId) {
-  await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${sessionId}/messages/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("access")}`,
-    },
-    body: JSON.stringify({
-      role: "user",
-      content: content,
-    }),
-  });
-}
-
-
-  // ✅ Save user message to backend
-  // if (activeSessionId) {
-  //   try {
-  //     await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${activeSessionId}/messages/`, {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" ,
-  //          Authorization: `Bearer ${localStorage.getItem("access")}`,
-  //       },
-  //       body: JSON.stringify({
-  //         role: "user",
-  //    content: content, // ✅ MUST BE `message`
-  // })
-  //     });
-  //   } catch (err) {
-  //     console.error("Failed to save user message:", err);
-  //   }
-  // }
+  if (sessionId) {
+    await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${sessionId}/messages/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("access")}`,
+      },
+      body: JSON.stringify({ role: "user", content }),
+    });
+  }
 
   const aiMessageId = `msg-${Date.now()}-ai`;
   setCurrentStreamingId(aiMessageId);
@@ -418,7 +394,7 @@ if (sessionId) {
     content: "",
     timestamp: new Date().toISOString(),
     completed: false,
-    hasNews: detectedTickers.length > 0,
+    hasNews: !!(forexPair || detectedTickers.length > 0),
     isStreaming: true,
   };
   setMessages((prev) => [...prev, aiMessage]);
@@ -437,22 +413,15 @@ if (sessionId) {
       );
     }
 
-    // ✅ Save final AI response to backend
     if (sessionId) {
-      try {
-        await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${sessionId}/messages/`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" ,
-             Authorization: `Bearer ${localStorage.getItem("access")}`,
-          },
-          body: JSON.stringify({
-            role: "assistant",
-            content: fullResponse,
-          }),
-        });
-      } catch (err) {
-        console.error("Failed to save AI message:", err);
-      }
+      await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${sessionId}/messages/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("access")}`,
+        },
+        body: JSON.stringify({ role: "assistant", content: fullResponse }),
+      });
     }
 
     setMessages((prev) =>
@@ -469,6 +438,7 @@ if (sessionId) {
       )
     );
   } catch (err) {
+    console.error("Streaming error:", err);
     setMessages((prev) =>
       prev.map((msg) =>
         msg.id === aiMessageId

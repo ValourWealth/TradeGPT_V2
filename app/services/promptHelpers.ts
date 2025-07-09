@@ -63,6 +63,32 @@ export function getRecentNewsPrompt(ticker: string): string {
 End with overall sentiment summary and ask if user wants more info.`;
 }
 
+export async function fetchForexRate(pair: string): Promise<string> {
+  const [from, to] = pair.split("/");
+  const apiKey = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_KEY;
+
+  const res = await fetch(
+    `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${from}&to_currency=${to}&apikey=${apiKey}`
+  );
+  const data = await res.json();
+  const fx = data["Realtime Currency Exchange Rate"];
+
+  if (fx) {
+    return `
+Forex Rate (${from}/${to})
+Exchange Rate: ${fx["5. Exchange Rate"]}
+Bid: ${fx["8. Bid Price"]}
+Ask: ${fx["9. Ask Price"]}
+Last Refreshed: ${fx["6. Last Refreshed"]}
+Source: Alpha Vantage
+`;
+  }
+
+  return `No live forex data found for ${pair}`;
+}
+
+export { fetchForexRate, streamChatResponse };
+
 // ✅ Integration Example (used in the parent component that renders <TickerDetailPanel />)
 
 import { streamChatResponse } from "../services/chatApi";

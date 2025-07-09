@@ -305,14 +305,34 @@ const handleSendMessage = async (content: string, ticker?: string) => {
     alphaData = results.join("\n\n");
   }
 
-  const systemPrompt = `
-${universalSystemPrompt}
-${detectedTickers.length > 0 ? `
+  const systemPrompt = detectedTickers.length > 0
+  ? `
+You are TradeGPT — a professional market analyst.
+
+Use the following real-time data for your analysis of ${detectedTickers.join(", ")}:
+
 --- BEGIN LIVE DATA ---
 ${alphaData}
 --- END LIVE DATA ---
-` : ""}
-  `;
+
+Respond with insights and structure (e.g., Summary, Trade Plan, Risks).
+Avoid placeholders.
+`
+  : `
+${universalSystemPrompt}
+
+Respond informally if the user is chatting casually or asking general questions.
+`;
+
+
+//   const systemPrompt = `
+// ${universalSystemPrompt}
+// ${detectedTickers.length > 0 ? `
+// --- BEGIN LIVE DATA ---
+// ${alphaData}
+// --- END LIVE DATA ---
+// ` : ""}
+//   `;
 
   
 

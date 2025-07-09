@@ -241,21 +241,24 @@ async function fetchForexRate(pair: string): Promise<string> {
   const apiKey = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_KEY;
 
   const res = await fetch(
-    // `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${from}&to_currency=${to}&apikey=${apiKey}`
-    `https://www.alphavantage.co/query?function=FX_INTRADAY&from_symbol=USD&to_symbol=EUR&interval=1min&apikey=${apiKey}`
+    `https://www.alphavantage.co/query?function=FX_INTRADAY&from_symbol=${from}&to_symbol=${to}&interval=1min&apikey=${apiKey}`
   );
   const data = await res.json();
-  const fx = data["Realtime Currency Exchange Rate"];
 
-  if (fx) {
+  const timeSeries = data["Time Series FX (1min)"];
+  const latestTimestamp = Object.keys(timeSeries || {})[0];
+
+  if (latestTimestamp) {
+    const rate = timeSeries[latestTimestamp];
     return `
 Forex Rate (${from}/${to})
-Exchange Rate: ${fx["5. Exchange Rate"]}
-Bid: ${fx["8. Bid Price"]}
-Ask: ${fx["9. Ask Price"]}
-Last Refreshed: ${fx["6. Last Refreshed"]}
+Last Refreshed: ${latestTimestamp}
+Open: ${rate["1. open"]}
+High: ${rate["2. high"]}
+Low: ${rate["3. low"]}
+Close: ${rate["4. close"]}
 Source: Alpha Vantage
-`;
+    `;
   }
 
   return `No live forex data found for ${pair}`;

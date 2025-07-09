@@ -50,3 +50,7 @@ body {
 .border-gray-700 {
   border: none !important;
 }
+
+.country-name {
+  color:#000 !important;
+}

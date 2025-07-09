@@ -133,28 +133,39 @@
 //   )
 // }
 
+
 "use client"
 
 import { Menu } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import ChatArea from "./components/ChatArea"
 import SidebarLeft from "./components/SidebarLeft"
 import TickerDetailPanel from "./components/TickerDetailPanel"
 import WatchlistSidebar from "./components/WatchlistSidebar"
 
 export default function TradeGPTApp() {
+  const router = useRouter()
+
+  useEffect(() => {
+    const token = localStorage.getItem("access")
+    if (!token) {
+      router.push("auth/signup")
+    }
+  }, [])
+
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null)
   const [currentSession, setCurrentSession] = useState<string | null>("new")
   const [pendingAction, setPendingAction] = useState<{ action: string; ticker: string } | null>(null)
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false)
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false)
-  const [sessionUpdateTrigger, setSessionUpdateTrigger] = useState(0) // Add this to force sidebar re-render
-  const [watchlistCollapsed, setWatchlistCollapsed] = useState(false) // ADDED: Watchlist collapsed state
+  const [sessionUpdateTrigger, setSessionUpdateTrigger] = useState(0)
+  const [watchlistCollapsed, setWatchlistCollapsed] = useState(false)
 
   const handlePromptSelect = (prompt: string) => {
     const event = new CustomEvent("sendPrompt", { detail: prompt })
     window.dispatchEvent(event)
-    setLeftSidebarOpen(false) // Close sidebar on mobile after selection
+    setLeftSidebarOpen(false)
   }
 
   const handleChatAction = (action: string, ticker: string) => {
@@ -167,24 +178,21 @@ export default function TradeGPTApp() {
 
   const handleTickerSelect = (ticker: string) => {
     setSelectedTicker(ticker)
-    setRightSidebarOpen(false) // Close watchlist on mobile when ticker is selected
+    setRightSidebarOpen(false)
   }
 
   const handleSessionSelect = (sessionId: string) => {
-    console.log("Session selected:", sessionId) // Debug log
+    console.log("Session selected:", sessionId)
     setCurrentSession(sessionId)
-    setLeftSidebarOpen(false) // Close sidebar on mobile when session is selected
+    setLeftSidebarOpen(false)
   }
 
   const handleSessionUpdate = (sessionId: string, messages: any[]) => {
-    console.log("Session updated:", sessionId, messages) // Debug log
-    // Update current session to the new one
+    console.log("Session updated:", sessionId, messages)
     setCurrentSession(sessionId)
-    // Force sidebar to re-render by updating trigger
     setSessionUpdateTrigger(prev => prev + 1)
   }
 
-  // ADDED: Handle watchlist toggle
   const handleWatchlistToggle = (isOpen: boolean) => {
     setWatchlistCollapsed(!isOpen)
   }
@@ -224,7 +232,7 @@ export default function TradeGPTApp() {
         `}
       >
         <SidebarLeft
-          key={sessionUpdateTrigger} // Force re-render when sessions update
+          key={sessionUpdateTrigger}
           currentSession={currentSession}
           onSessionSelect={handleSessionSelect}
           onPromptSelect={handlePromptSelect}
@@ -242,7 +250,7 @@ export default function TradeGPTApp() {
         />
       </div>
 
-      {/* Right Sidebar - MODIFIED: Dynamic width based on watchlist state */}
+      {/* Right Sidebar */}
       <div
         className={`
           fixed lg:relative lg:translate-x-0 z-40 lg:z-auto right-0
@@ -259,7 +267,6 @@ export default function TradeGPTApp() {
           onToggle={handleWatchlistToggle}
         />
 
-        {/* Ticker Detail Panel Overlay - MODIFIED: Only show when not collapsed */}
         {selectedTicker && !watchlistCollapsed && (
           <TickerDetailPanel
             ticker={selectedTicker}

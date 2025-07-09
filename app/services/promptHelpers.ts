@@ -63,7 +63,7 @@ export function getRecentNewsPrompt(ticker: string): string {
 End with overall sentiment summary and ask if user wants more info.`;
 }
 
-export async function fetchForexRate(pair: string): Promise<string> {
+async function fetchForexRate(pair: string): Promise<string> {
   const [from, to] = pair.split("/");
   const apiKey = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_KEY;
 

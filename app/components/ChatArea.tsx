@@ -78,12 +78,12 @@ export default function ChatArea({ currentSession, pendingAction, onActionProces
 
 
   useEffect(() => {
-    if (pendingAction) {
-      const actionMessage = `Show me ${pendingAction.action.toLowerCase()} for ${pendingAction.ticker}`
-      handleSendMessage(actionMessage, pendingAction.ticker)
-      onActionProcessed?.()
-    }
-  }, [pendingAction])
+  if (pendingAction) {
+    const actionMessage = `Show me ${pendingAction.action.toLowerCase()} for ${pendingAction.ticker}`;
+    handleSendMessage(actionMessage);
+    onActionProcessed?.();
+  }
+}, [pendingAction]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -288,12 +288,15 @@ function extractTickers(text: string): string[] {
     "EURUSD", "USDJPY", "GBPUSD", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD", "EURJPY", "GBPJPY", "EURGBP",
   ];
 
-  const matches = upperText.match(/\b[A-Z]{3}[\/]?[A-Z]{3}\b/g) || [];
+  const cryptoPairs = ["BTCUSD", "ETHUSD", "XRPUSD", "LTCUSD", "SOLUSD", "DOGEUSD"];
+
+  const matches = upperText.match(/\b[A-Z]{3,4}[\/]?[A-Z]{3}\b/g) || [];
 
   return matches
-    .map(m => m.replace("/", "")) // normalize EUR/USD → EURUSD
-    .filter(m => forexPairs.includes(m));
+    .map(m => m.replace("/", ""))
+    .filter(m => forexPairs.includes(m) || cryptoPairs.includes(m));
 }
+
 
 
 
@@ -482,20 +485,24 @@ function extractTickers(text: string): string[] {
 //   }
 // };
 
-const handleSendMessage = async (content: string, ticker?: string) => {
+const handleSendMessage = async (content: string) => {
   if (!content.trim()) return;
 
   if (abortControllerRef.current) {
     abortControllerRef.current.abort();
   }
 
-  const detectedTickers = extractTickers(content); // this will normalize forex like USD/EUR → USDEUR
+  const detectedTickers = extractTickers(content);
   let alphaData = "";
 
-  const isForexQuery =
-    /forex|exchange rate|usd|eur|gbp|cad|jpy|aud/i.test(content) &&
+  const isForexQuery = /forex|exchange rate|usd|eur|gbp|cad|jpy|aud/i.test(content) &&
     detectedTickers.length > 0 &&
-    /^[A-Z]{6}$/.test(detectedTickers[0]);
+    /^[A-Z]{6}$/.test(detectedTickers[0]) &&
+    !detectedTickers[0].startsWith("BTC"); // exclude crypto
+
+  const isCryptoQuery = /btc|eth|xrp|sol|crypto|blockchain/i.test(content) &&
+    detectedTickers.length > 0 &&
+    detectedTickers[0].endsWith("USD");
 
   if (detectedTickers.length > 0) {
     const results = await Promise.all(
@@ -507,9 +514,27 @@ const handleSendMessage = async (content: string, ticker?: string) => {
     alphaData = results.join("\n\n");
   }
 
-  // 📌 Choose prompt style
-  const systemPrompt = isForexQuery
-    ? `
+  let systemPrompt = "";
+
+  if (isCryptoQuery) {
+    systemPrompt = `
+You are TradeGPT, a crypto-focused trading assistant.
+
+The user asked about ${detectedTickers[0]} (e.g., BTC/USD). Use real-time crypto market data below to provide:
+
+- Price summary
+- Technical levels
+- Trade scenarios
+- Risk notes
+
+--- BEGIN CRYPTO DATA ---
+${alphaData}
+--- END CRYPTO DATA ---
+
+Respond clearly and briefly unless the user asks for full analysis.
+    `;
+  } else if (isForexQuery) {
+    systemPrompt = `
 You are TradeGPT, a smart forex assistant.
 
 User asked about the forex pair ${detectedTickers[0]}.
@@ -520,17 +545,19 @@ ${alphaData}
 --- END FOREX DATA ---
 
 Keep the response concise, current, and insightful.
-`
-    : `
+    `;
+  } else {
+    systemPrompt = `
 ${universalSystemPrompt}
 ${detectedTickers.length > 0 ? `
 --- BEGIN LIVE DATA ---
 ${alphaData}
 --- END LIVE DATA ---
 ` : ""}
-`;
+    `;
+  }
 
-  // 🧠 Create new session if needed
+  // Start session if new
   let sessionId = activeSessionId;
   if (!sessionId || currentSession === "new") {
     try {
@@ -608,23 +635,18 @@ ${alphaData}
       );
     }
 
-    // Save AI message
     if (sessionId) {
-      try {
-        await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${sessionId}/messages/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("access")}`,
-          },
-          body: JSON.stringify({
-            role: "assistant",
-            content: fullResponse,
-          }),
-        });
-      } catch (err) {
-        console.error("Failed to save AI message:", err);
-      }
+      await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${sessionId}/messages/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("access")}`,
+        },
+        body: JSON.stringify({
+          role: "assistant",
+          content: fullResponse,
+        }),
+      });
     }
 
     setMessages((prev) =>
@@ -660,6 +682,7 @@ ${alphaData}
     abortControllerRef.current = null;
   }
 };
+
 
 
 

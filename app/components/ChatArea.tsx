@@ -33,27 +33,13 @@ export default function ChatArea({ currentSession, pendingAction, onActionProces
   const STOCK_TICKERS = [
   "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "QQQ", "SPY", "NFLX", "BA", "XOM"
 ];
+// ============================================================================================
+// function extractTickers(text: string): string[] {
+//   const words = text.toUpperCase().match(/\b[A-Z]{2,5}\b/g) || [];
+//   return words.filter((w) => STOCK_TICKERS.includes(w));
+// }
+// ================================================================================
 
-function extractTickers(text: string): string[] {
-  const words = text.toUpperCase().match(/\b[A-Z]{2,5}\b/g) || [];
-  return words.filter((w) => STOCK_TICKERS.includes(w));
-}
-
-
-  // useEffect(() => {
-  //   if (currentSession === "new" || currentSession === null) {
-  //     // Clear messages for new chat
-  //     setMessages([])
-  //     setActiveSessionId(null)
-  //   } else if (currentSession && currentSession !== activeSessionId) {
-  //     // Load different session if it's actually different
-  //     const session = chatData.sessions.find((s) => s.id === currentSession)
-  //     if (session) {
-  //       setMessages(session.messages)
-  //       setActiveSessionId(currentSession)
-  //     }
-  //   }
-  // }, [currentSession])
 
   useEffect(() => {
   const fetchSessionMessages = async () => {
@@ -295,16 +281,221 @@ function extractTickers(text: string): string[] {
 //   }
 // };
 
+function extractTickers(text: string): string[] {
+  const upperText = text.toUpperCase();
+
+  const forexPairs = [
+    "EURUSD", "USDJPY", "GBPUSD", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD", "EURJPY", "GBPJPY", "EURGBP",
+  ];
+
+  const matches = upperText.match(/\b[A-Z]{3}[\/]?[A-Z]{3}\b/g) || [];
+
+  return matches
+    .map(m => m.replace("/", "")) // normalize EUR/USD → EURUSD
+    .filter(m => forexPairs.includes(m));
+}
+
+
+
+// const handleSendMessage = async (content: string, ticker?: string) => {
+//   if (!content.trim()) return;
+
+//   // Cancel ongoing stream if any
+//   if (abortControllerRef.current) {
+//     abortControllerRef.current.abort();
+//   }
+
+//   const detectedTickers = extractTickers(content);
+//   let alphaData = "";
+
+//   if (detectedTickers.length > 0) {
+//     const results = await Promise.all(
+//       detectedTickers.map(async (symbol) => {
+//         const result = await fetchAlphaVantageData(symbol);
+//         return `--- ${symbol} ---\n${result}`;
+//       })
+//     );
+//     alphaData = results.join("\n\n");
+//   }
+
+//   const systemPrompt = `
+// ${universalSystemPrompt}
+// ${detectedTickers.length > 0 ? `
+// --- BEGIN LIVE DATA ---
+// ${alphaData}
+// --- END LIVE DATA ---
+// ` : ""}
+//   `;
+
+  
+
+//   let sessionId = activeSessionId;
+
+  
+// if (!sessionId || currentSession === "new") {
+//   try {
+//     const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "");
+//     const res = await fetch('https://tradegptv2backend-production.up.railway.app/api/sessions/', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//         Authorization: `Bearer ${localStorage.getItem("access")}`,
+//       },
+//       body: JSON.stringify({ title: sessionTitle }),
+//     });
+//     const data = await res.json();
+//     sessionId = data.id;
+//     // setActiveSessionId(sessionId);
+//     // onSessionUpdate?.(sessionId, []);
+//     if (sessionId) {
+//   setActiveSessionId(sessionId);
+//   onSessionUpdate?.(sessionId, []);
+// }
+
+//   } catch (err) {
+//     console.error("Session creation failed", err);
+//     return;
+//   }
+// }
+
+//   const userMessage = {
+//     id: `msg-${Date.now()}`,
+//     type: "user",
+//     content,
+//     timestamp: new Date().toISOString(),
+//   };
+
+//   setMessages((prev) => [...prev, userMessage]);
+//   setInputValue("");
+//   setIsTyping(true);
+//   setStreamingMessage("");
+
+// if (sessionId) {
+//   await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${sessionId}/messages/`, {
+//     method: "POST",
+//     headers: {
+//       "Content-Type": "application/json",
+//       Authorization: `Bearer ${localStorage.getItem("access")}`,
+//     },
+//     body: JSON.stringify({
+//       role: "user",
+//       content: content,
+//     }),
+//   });
+// }
+
+
+//   // ✅ Save user message to backend
+//   // if (activeSessionId) {
+//   //   try {
+//   //     await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${activeSessionId}/messages/`, {
+//   //       method: "POST",
+//   //       headers: { "Content-Type": "application/json" ,
+//   //          Authorization: `Bearer ${localStorage.getItem("access")}`,
+//   //       },
+//   //       body: JSON.stringify({
+//   //         role: "user",
+//   //    content: content, // ✅ MUST BE `message`
+//   // })
+//   //     });
+//   //   } catch (err) {
+//   //     console.error("Failed to save user message:", err);
+//   //   }
+//   // }
+
+//   const aiMessageId = `msg-${Date.now()}-ai`;
+//   setCurrentStreamingId(aiMessageId);
+//   const aiMessage = {
+//     id: aiMessageId,
+//     type: "ai",
+//     content: "",
+//     timestamp: new Date().toISOString(),
+//     completed: false,
+//     hasNews: detectedTickers.length > 0,
+//     isStreaming: true,
+//   };
+//   setMessages((prev) => [...prev, aiMessage]);
+
+//   try {
+//     abortControllerRef.current = new AbortController();
+//     let fullResponse = "";
+
+//     for await (const chunk of streamChatResponse(content, detectedTickers[0], systemPrompt)) {
+//       if (abortControllerRef.current?.signal.aborted) break;
+
+//       fullResponse += chunk;
+//       setStreamingMessage(fullResponse);
+//       setMessages((prev) =>
+//         prev.map((msg) => (msg.id === aiMessageId ? { ...msg, content: fullResponse } : msg))
+//       );
+//     }
+
+//     // ✅ Save final AI response to backend
+//     if (sessionId) {
+//       try {
+//         await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${sessionId}/messages/`, {
+//           method: "POST",
+//           headers: { "Content-Type": "application/json" ,
+//              Authorization: `Bearer ${localStorage.getItem("access")}`,
+//           },
+//           body: JSON.stringify({
+//             role: "assistant",
+//             content: fullResponse,
+//           }),
+//         });
+//       } catch (err) {
+//         console.error("Failed to save AI message:", err);
+//       }
+//     }
+
+//     setMessages((prev) =>
+//       prev.map((msg) =>
+//         msg.id === aiMessageId
+//           ? {
+//               ...msg,
+//               content: fullResponse,
+//               completed: true,
+//               isStreaming: false,
+//               analysis: generateAnalysisFromResponse(fullResponse, content),
+//             }
+//           : msg
+//       )
+//     );
+//   } catch (err) {
+//     setMessages((prev) =>
+//       prev.map((msg) =>
+//         msg.id === aiMessageId
+//           ? {
+//               ...msg,
+//               content: "Sorry, I couldn't complete that request right now.",
+//               completed: true,
+//               isStreaming: false,
+//             }
+//           : msg
+//       )
+//     );
+//   } finally {
+//     setIsTyping(false);
+//     setStreamingMessage("");
+//     setCurrentStreamingId(null);
+//     abortControllerRef.current = null;
+//   }
+// };
+
 const handleSendMessage = async (content: string, ticker?: string) => {
   if (!content.trim()) return;
 
-  // Cancel ongoing stream if any
   if (abortControllerRef.current) {
     abortControllerRef.current.abort();
   }
 
-  const detectedTickers = extractTickers(content);
+  const detectedTickers = extractTickers(content); // this will normalize forex like USD/EUR → USDEUR
   let alphaData = "";
+
+  const isForexQuery =
+    /forex|exchange rate|usd|eur|gbp|cad|jpy|aud/i.test(content) &&
+    detectedTickers.length > 0 &&
+    /^[A-Z]{6}$/.test(detectedTickers[0]);
 
   if (detectedTickers.length > 0) {
     const results = await Promise.all(
@@ -316,65 +507,53 @@ const handleSendMessage = async (content: string, ticker?: string) => {
     alphaData = results.join("\n\n");
   }
 
-  const systemPrompt = `
+  // 📌 Choose prompt style
+  const systemPrompt = isForexQuery
+    ? `
+You are TradeGPT, a smart forex assistant.
+
+User asked about the forex pair ${detectedTickers[0]}.
+Use the following real-time data to provide a price summary and trading insight.
+
+--- BEGIN FOREX DATA ---
+${alphaData}
+--- END FOREX DATA ---
+
+Keep the response concise, current, and insightful.
+`
+    : `
 ${universalSystemPrompt}
 ${detectedTickers.length > 0 ? `
 --- BEGIN LIVE DATA ---
 ${alphaData}
 --- END LIVE DATA ---
 ` : ""}
-  `;
+`;
 
-  // // Create new session if needed
-  // if (!activeSessionId || currentSession === "new") {
-  //   try {
-  //     const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "");
-  //     const res = await fetch('https://tradegptv2backend-production.up.railway.app/api/sessions/', {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json',
-  //          Authorization: `Bearer ${localStorage.getItem("access")}`,
-  //        },
-        
-  //       body: JSON.stringify({ title: sessionTitle }),
-  //     });
-  //     const data = await res.json();
-  //     const newSessionId = data.id;
-  //     setActiveSessionId(newSessionId);
-  //     onSessionUpdate?.(newSessionId, []);
-  //   } catch (err) {
-  //     console.error("Session creation failed", err);
-  //     return;
-  //   }
-  // }
-
+  // 🧠 Create new session if needed
   let sessionId = activeSessionId;
-
-  
-if (!sessionId || currentSession === "new") {
-  try {
-    const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "");
-    const res = await fetch('https://tradegptv2backend-production.up.railway.app/api/sessions/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem("access")}`,
-      },
-      body: JSON.stringify({ title: sessionTitle }),
-    });
-    const data = await res.json();
-    sessionId = data.id;
-    // setActiveSessionId(sessionId);
-    // onSessionUpdate?.(sessionId, []);
-    if (sessionId) {
-  setActiveSessionId(sessionId);
-  onSessionUpdate?.(sessionId, []);
-}
-
-  } catch (err) {
-    console.error("Session creation failed", err);
-    return;
+  if (!sessionId || currentSession === "new") {
+    try {
+      const sessionTitle = content.slice(0, 50) + (content.length > 50 ? "..." : "");
+      const res = await fetch('https://tradegptv2backend-production.up.railway.app/api/sessions/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem("access")}`,
+        },
+        body: JSON.stringify({ title: sessionTitle }),
+      });
+      const data = await res.json();
+      sessionId = data.id;
+      if (sessionId) {
+        setActiveSessionId(sessionId);
+        onSessionUpdate?.(sessionId, []);
+      }
+    } catch (err) {
+      console.error("Session creation failed", err);
+      return;
+    }
   }
-}
 
   const userMessage = {
     id: `msg-${Date.now()}`,
@@ -388,38 +567,19 @@ if (!sessionId || currentSession === "new") {
   setIsTyping(true);
   setStreamingMessage("");
 
-if (sessionId) {
-  await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${sessionId}/messages/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("access")}`,
-    },
-    body: JSON.stringify({
-      role: "user",
-      content: content,
-    }),
-  });
-}
-
-
-  // ✅ Save user message to backend
-  // if (activeSessionId) {
-  //   try {
-  //     await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${activeSessionId}/messages/`, {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" ,
-  //          Authorization: `Bearer ${localStorage.getItem("access")}`,
-  //       },
-  //       body: JSON.stringify({
-  //         role: "user",
-  //    content: content, // ✅ MUST BE `message`
-  // })
-  //     });
-  //   } catch (err) {
-  //     console.error("Failed to save user message:", err);
-  //   }
-  // }
+  if (sessionId) {
+    await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${sessionId}/messages/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("access")}`,
+      },
+      body: JSON.stringify({
+        role: "user",
+        content,
+      }),
+    });
+  }
 
   const aiMessageId = `msg-${Date.now()}-ai`;
   setCurrentStreamingId(aiMessageId);
@@ -448,13 +608,14 @@ if (sessionId) {
       );
     }
 
-    // ✅ Save final AI response to backend
+    // Save AI message
     if (sessionId) {
       try {
         await fetch(`https://tradegptv2backend-production.up.railway.app/api/sessions/${sessionId}/messages/`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" ,
-             Authorization: `Bearer ${localStorage.getItem("access")}`,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("access")}`,
           },
           body: JSON.stringify({
             role: "assistant",

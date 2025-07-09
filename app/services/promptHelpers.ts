@@ -241,7 +241,8 @@ async function fetchForexRate(pair: string): Promise<string> {
   const apiKey = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_KEY;
 
   const res = await fetch(
-    `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${from}&to_currency=${to}&apikey=${apiKey}`
+    // `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${from}&to_currency=${to}&apikey=${apiKey}`
+    `https://www.alphavantage.co/query?function=FX_INTRADAY&from_symbol=USD&to_symbol=EUR&interval=1min&apikey=${apiKey}`
   );
   const data = await res.json();
   const fx = data["Realtime Currency Exchange Rate"];

@@ -892,6 +892,66 @@ Always end with:
 “If you have any more questions or want deeper insights, feel free to ask — or contact a Valour Wealth analyst for personal guidance.”
 `;
 
+// export async function handleChatAction(action: string, symbolOrPair: string) {
+//   let userPrompt = "";
+//   let alphaData = "";
+//   let systemPrompt = "";
+
+//   const isForexPair = symbolOrPair.includes("/") && symbolOrPair.length === 7;
+
+//   try {
+//     if (isForexPair) {
+//       const rawData = await fetchForexRate(symbolOrPair);
+//       const match = rawData.match(/Close:\s*([\d.]+)/);
+//       const closeRate = match ? match[1] : "Unavailable";
+
+//       userPrompt = getForexTradeIdeasPrompt(symbolOrPair, closeRate);
+//       alphaData = rawData;
+//     } else {
+//       alphaData = await fetchAlphaVantageData(symbolOrPair);
+//     }
+//   } catch (error) {
+//     console.error("AlphaVantage fetch error:", error);
+//   }
+
+//   if (!isForexPair) {
+//     switch (action) {
+//       case "Price Chart":
+//         userPrompt = getPriceChartPrompt(symbolOrPair);
+//         break;
+//       case "Recent News":
+//         userPrompt = getRecentNewsPrompt(symbolOrPair);
+//         break;
+//       case "Trade Ideas":
+//         userPrompt = getTradeIdeasPrompt(symbolOrPair);
+//         break;
+//       case "Analysis":
+//         userPrompt = getFundamentalAnalysisPrompt(symbolOrPair);
+//         break;
+//       default:
+//         userPrompt = symbolOrPair;
+//     }
+//   }
+
+//   if (alphaData) {
+//     systemPrompt = `
+// You are TradeGPT, a professional market analyst and trading assistant.
+
+// Use the following real-time data for your analysis of ${symbolOrPair}:
+
+// --- BEGIN LIVE DATA ---
+// ${alphaData}
+// --- END LIVE DATA ---
+
+// Summarize this data intelligently, and respond in the usual TradeGPT format with structured sections and real numbers. Do not mention the raw data dump — interpret it naturally.
+// `;
+//   } else {
+//     systemPrompt = universalSystemPrompt;
+//   }
+
+//   streamChatResponse(userPrompt, symbolOrPair, systemPrompt);
+// }
+
 export async function handleChatAction(action: string, symbolOrPair: string) {
   let userPrompt = "";
   let alphaData = "";
@@ -905,50 +965,73 @@ export async function handleChatAction(action: string, symbolOrPair: string) {
       const match = rawData.match(/Close:\s*([\d.]+)/);
       const closeRate = match ? match[1] : "Unavailable";
 
-      userPrompt = getForexTradeIdeasPrompt(symbolOrPair, closeRate);
+      // 👇 Dynamically route prompt type for Forex
+      switch (action) {
+        case "Reversal Detection":
+          userPrompt = `Identify 3 forex pairs showing early signs of a reversal. Support it with data as of today.`;
+          break;
+        case "Breakout Above Daily High":
+          userPrompt = `Identify 5 forex pairs that have traded above their previous daily high or low. Include data.`;
+          break;
+        case "Intraday Idea":
+          userPrompt = `Give me an intraday trade idea for ${symbolOrPair}. Justify the setup with key levels and data.`;
+          break;
+        case "Macro News":
+          userPrompt = `Is there any economic news that may affect the markets today? Give headlines with context.`;
+          break;
+        default:
+          userPrompt = getForexTradeIdeasPrompt(symbolOrPair, closeRate);
+      }
+
       alphaData = rawData;
     } else {
+      // Stocks: fetch AlphaVantage
       alphaData = await fetchAlphaVantageData(symbolOrPair);
+
+      switch (action) {
+        case "Price Chart":
+          userPrompt = getPriceChartPrompt(symbolOrPair);
+          break;
+        case "Recent News":
+          userPrompt = getRecentNewsPrompt(symbolOrPair);
+          break;
+        case "Trade Ideas":
+          userPrompt = getTradeIdeasPrompt(symbolOrPair);
+          break;
+        case "Analysis":
+          userPrompt = getFundamentalAnalysisPrompt(symbolOrPair);
+          break;
+        case "Options":
+          userPrompt = `Recommend top Call or Put options with weekly expirations for ${symbolOrPair}.`;
+          break;
+        default:
+          userPrompt = symbolOrPair;
+      }
     }
   } catch (error) {
     console.error("AlphaVantage fetch error:", error);
   }
 
-  if (!isForexPair) {
-    switch (action) {
-      case "Price Chart":
-        userPrompt = getPriceChartPrompt(symbolOrPair);
-        break;
-      case "Recent News":
-        userPrompt = getRecentNewsPrompt(symbolOrPair);
-        break;
-      case "Trade Ideas":
-        userPrompt = getTradeIdeasPrompt(symbolOrPair);
-        break;
-      case "Analysis":
-        userPrompt = getFundamentalAnalysisPrompt(symbolOrPair);
-        break;
-      default:
-        userPrompt = symbolOrPair;
-    }
-  }
-
+  // 👇 Inject AlphaVantage or Forex data into the LLM prompt
   if (alphaData) {
     systemPrompt = `
-You are TradeGPT, a professional market analyst and trading assistant.
+You are TradeGPT — a professional trading assistant and market analyst.
 
-Use the following real-time data for your analysis of ${symbolOrPair}:
+Use the following real-time data for your response about ${symbolOrPair}:
 
 --- BEGIN LIVE DATA ---
 ${alphaData}
 --- END LIVE DATA ---
 
-Summarize this data intelligently, and respond in the usual TradeGPT format with structured sections and real numbers. Do not mention the raw data dump — interpret it naturally.
-`;
+Use this data naturally to power your answer. Do not mention it's from an API or use placeholders. Summarize like a human trader would using structured sections (Summary, Technicals, Trade Setup, Risk, etc).
+
+Always end with: “If you have more questions or want deeper insights, feel free to ask — or contact a Valour Wealth analyst.”
+    `;
   } else {
     systemPrompt = universalSystemPrompt;
   }
 
+  // 👇 Finally, stream the LLM response
   streamChatResponse(userPrompt, symbolOrPair, systemPrompt);
 }
 

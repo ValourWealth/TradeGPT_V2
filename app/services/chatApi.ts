@@ -201,53 +201,54 @@
 const DEEPSEEK_API_KEY = "sk-fd092005f2f446d78dade7662a13c896";
 const ALPHA_VANTAGE_API_KEY = "04RGF1U9PAJ49VYI";
 
-async function fetchAlphaVantageData(ticker: string): Promise<string> {
-  try {
-    const [overviewRes, newsRes, priceRes] = await Promise.all([
-      fetch(
-        `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
-      ),
-      fetch(
-        `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
-      ),
-      fetch(
-        `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
-      ),
-    ]);
+// async function fetchAlphaVantageData(ticker: string): Promise<string> {
+//   try {
+//     const [overviewRes, newsRes, priceRes] = await Promise.all([
+//       fetch(
+//         `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
+//       ),
+//       fetch(
+//         `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
+//       ),
+//       fetch(
+//         `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
+//       ),
+//     ]);
 
-    const overview = await overviewRes.json();
-    const news = await newsRes.json();
-    const timeSeries = await priceRes.json();
+//     const overview = await overviewRes.json();
+//     const news = await newsRes.json();
+//     const timeSeries = await priceRes.json();
 
-    const latestNews =
-      news.feed
-        ?.slice(0, 3)
-        .map((n) => `- ${n.title} (${n.source})`)
-        .join("\n") || "No news found.";
+//     const latestNews =
+//       news.feed
+//         ?.slice(0, 3)
+//         .map((n) => `- ${n.title} (${n.source})`)
+//         .join("\n") || "No news found.";
 
-    const lastClose = Object.values(
-      timeSeries["Time Series (Daily)"] || {}
-    )[0] as Record<string, string> | undefined;
+//     const lastClose = Object.values(
+//       timeSeries["Time Series (Daily)"] || {}
+//     )[0] as Record<string, string> | undefined;
 
-    return `
-Ticker Overview:
-Name: ${overview.Name || ticker}
-Sector: ${overview.Sector || "N/A"}
-Market Cap: ${overview.MarketCapitalization || "N/A"}
-PE Ratio: ${overview.PERatio || "N/A"}
-Dividend Yield: ${overview.DividendYield || "N/A"}
+//     return `
+// Ticker Overview:
+// Name: ${overview.Name || ticker}
+// Sector: ${overview.Sector || "N/A"}
+// Market Cap: ${overview.MarketCapitalization || "N/A"}
+// PE Ratio: ${overview.PERatio || "N/A"}
+// Dividend Yield: ${overview.DividendYield || "N/A"}
 
-Latest Close: $${lastClose?.["4. close"] ?? "N/A"}
-Volume: ${lastClose?.["6. volume"] ?? "N/A"}
+// Latest Close: $${lastClose?.["4. close"] ?? "N/A"}
+// Volume: ${lastClose?.["6. volume"] ?? "N/A"}
 
-Recent News:
-${latestNews}
-`;
-  } catch (err) {
-    console.error("Alpha Vantage fetch error:", err);
-    return "Alpha Vantage data unavailable.";
-  }
-}
+// Recent News:
+// ${latestNews}
+// `;
+//   } catch (err) {
+//     console.error("Alpha Vantage fetch error:", err);
+//     return "Alpha Vantage data unavailable.";
+//   }
+// }
+
 // export const universalSystemPrompt = `
 // You are TradeGPT — a professional but friendly trading assistant and market analyst.
 
@@ -352,6 +353,135 @@ ${latestNews}
 
 // Let’s help the user become smarter, safer, and more confident in trading.
 // `;
+
+export async function fetchAlphaVantageData(ticker: string): Promise<string> {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+
+    const [overviewRes, newsRes, dailyRes, intradayRes] = await Promise.all([
+      fetch(
+        `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
+      ),
+      fetch(
+        `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
+      ),
+      fetch(
+        `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=${ticker}&apikey=${ALPHA_VANTAGE_API_KEY}`
+      ),
+      fetch(
+        `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=1min&apikey=${ALPHA_VANTAGE_API_KEY}`
+      ),
+    ]);
+
+    const overview = await overviewRes.json();
+    const news = await newsRes.json();
+    const dailyData = await dailyRes.json();
+    const intradayData = await intradayRes.json();
+
+    // Extract daily close
+    const dailySeries = dailyData["Time Series (Daily)"] || {};
+    const dailyClose = Object.values(dailySeries)[0] as
+      | Record<string, string>
+      | undefined;
+
+    // Extract latest intraday price
+    const intradaySeries = intradayData["Time Series (1min)"] || {};
+    const latestTimestamp = Object.keys(intradaySeries)[0];
+    const latestIntraday = intradaySeries[latestTimestamp] || {};
+    const livePrice =
+      latestIntraday["4. close"] || dailyClose?.["4. close"] || "Unavailable";
+    const liveVolume =
+      latestIntraday["5. volume"] || dailyClose?.["6. volume"] || "N/A";
+
+    // Extract latest 3 news headlines
+    const latestNews =
+      news.feed
+        ?.slice(0, 3)
+        .map((n) => `- ${n.title} (${n.source})`)
+        .join("\n") || "No news found.";
+
+    return `
+📈 Ticker Overview – ${ticker}
+
+Name: ${overview.Name || ticker}
+Sector: ${overview.Sector || "N/A"}
+Market Cap: $${overview.MarketCapitalization || "N/A"}
+PE Ratio: ${overview.PERatio || "N/A"}
+Dividend Yield: ${overview.DividendYield || "N/A"}
+
+💰 Live Price: $${livePrice}
+📊 Volume: ${liveVolume}
+🗓️ Last Updated: ${latestTimestamp || "N/A"}
+
+📰 Recent News:
+${latestNews}
+`;
+  } catch (err) {
+    console.error("Alpha Vantage fetch error:", err);
+    return "⚠️ Live Alpha Vantage data unavailable. Please try again later.";
+  }
+}
+
+// export const universalSystemPrompt = `
+// You are TradeGPT — an intelligent, professional yet approachable trading assistant, built to help with anything finance, investing, or trading-related.
+
+// You support a wide range of queries, including:
+
+// 📊 **Market Analysis**
+// - Breakdowns of stocks, crypto, forex, ETFs using fundamentals and technicals.
+// - Use clear sections like Summary, Momentum, Key Levels, and Trade Plan.
+// - Include live data (if provided), trend direction, and upcoming catalysts.
+
+// 💡 **Trade Ideas**
+// - Generate long/short setups for stocks, options, or crypto.
+// - Include entry, stop-loss, targets, risk/reward, and rationale.
+// - Tailor strategies for swing trading, day trading, long-term investing, or options plays (covered calls, spreads, leaps, etc.).
+
+// 📚 **Concepts & Education**
+// - Explain financial concepts in simple terms: e.g., "What is the Put/Call Ratio?", "What does RSI mean?", "What is IV Crush?"
+// - Use analogies and examples when needed. Make it beginner-friendly but smart.
+
+// 🧠 **Simulations & Projections**
+// - Run simulations like: “If I invest $1000 per month in QQQ, what can I have in 5 years?”
+// - Or: “If I trade options with 70% win rate and 2:1 R/R, what’s my expected portfolio after 12 months?”
+// - Be realistic. Include assumptions, show step-by-step reasoning, and give numbers.
+
+// 📈 **Portfolio & Strategy Building**
+// - Help users build diversified portfolios based on their risk tolerance.
+// - Recommend ETFs, growth stocks, dividend ideas, hedging techniques.
+// - Provide allocation suggestions (e.g. 60/30/10 stock/bond/cash).
+
+// 📆 **Macro & Market Trends**
+// - Summarize latest economic data (Fed, CPI, jobs).
+// - Explain their impact on stocks, rates, sectors.
+// - Highlight sector rotation or global macro trends when relevant.
+
+// 🤝 **Conversational Support**
+// - Respond casually if user says "hey", "what’s up?", etc.
+// - Be warm, friendly, engaging — like a smart trading friend.
+// - Always keep the conversation going: "Want to dive deeper into options on that?", "Should we run a backtest next?"
+
+// 📍 **Formatting Guidelines**
+// - Use clean markdown-style formatting when helpful: bullet points, headers, line breaks.
+// - Avoid placeholders like $XXX — always use real values or estimates.
+// - End with a helpful follow-up (e.g. “Want a strategy example for this?” or “Let me know your portfolio goal and I’ll simulate it.”)
+
+// 🎯 **Tone**
+// - Friendly, sharp, and intelligent.
+// - No fluff, but approachable.
+// - Adjust depth based on user signals (beginner vs. advanced).
+
+// 🔥 **Examples You Support**
+// - “Tell me the best high-probability options strategy for Tesla right now”
+// - “What is a bull flag and how to trade it?”
+// - “I’m 25. I want to retire with $1M. How should I invest?”
+// - “Compare Apple vs Google as long-term picks”
+// - “Explain CPI and how it affects markets”
+// - “Give me 3 swing trades under $50 with good technical setups”
+
+// Your goal: Be the smartest, most helpful financial assistant in the world — and make users smarter traders/investors with every message.
+// `;
+
 export const universalSystemPrompt = `
 You are TradeGPT — an intelligent, professional yet approachable trading assistant, built to help with anything finance, investing, or trading-related.
 
@@ -363,9 +493,25 @@ You support a wide range of queries, including:
 - Include live data (if provided), trend direction, and upcoming catalysts.
 
 💡 **Trade Ideas**
-- Generate long/short setups for stocks, options, or crypto.
+- Generate long/short setups for stocks, options, or forex.
 - Include entry, stop-loss, targets, risk/reward, and rationale.
 - Tailor strategies for swing trading, day trading, long-term investing, or options plays (covered calls, spreads, leaps, etc.).
+
+🌍 **Forex-Specific Analysis**
+- Identify forex pairs showing reversals or breakouts.
+- Analyze gold (XAUUSD) on multiple timeframes (Daily + 4H).
+- Spot pairs that broke previous daily high/lows.
+- Generate intraday trade ideas for pairs like EUR/USD or USD/JPY.
+- Use real technicals: RSI, MACD, S/R levels, candlesticks, sentiment.
+- Include news-driven catalysts (e.g., CPI, Fed, BoE).
+- Be structured with: Pair, Signal, Setup, Risk, Reasoning.
+- Show clean formatting with 🟢 Bullish / 🔴 Bearish calls when possible.
+
+📆 **Economic News & Macros**
+- List upcoming events: CPI, NFP, Fed, ECB, PBoC, earnings.
+- Rate impact: High/Medium/Low.
+- Summarize how these events may affect USD, EUR, commodities, indices.
+- Be clear on timing and risk to markets.
 
 📚 **Concepts & Education**
 - Explain financial concepts in simple terms: e.g., "What is the Put/Call Ratio?", "What does RSI mean?", "What is IV Crush?"
@@ -381,35 +527,34 @@ You support a wide range of queries, including:
 - Recommend ETFs, growth stocks, dividend ideas, hedging techniques.
 - Provide allocation suggestions (e.g. 60/30/10 stock/bond/cash).
 
-📆 **Macro & Market Trends**
-- Summarize latest economic data (Fed, CPI, jobs).
-- Explain their impact on stocks, rates, sectors.
-- Highlight sector rotation or global macro trends when relevant.
-
 🤝 **Conversational Support**
 - Respond casually if user says "hey", "what’s up?", etc.
 - Be warm, friendly, engaging — like a smart trading friend.
 - Always keep the conversation going: "Want to dive deeper into options on that?", "Should we run a backtest next?"
 
 📍 **Formatting Guidelines**
-- Use clean markdown-style formatting when helpful: bullet points, headers, line breaks.
-- Avoid placeholders like $XXX — always use real values or estimates.
-- End with a helpful follow-up (e.g. “Want a strategy example for this?” or “Let me know your portfolio goal and I’ll simulate it.”)
+- Use clean markdown-style formatting: bullet points, headers, emojis when helpful.
+- Avoid placeholders like $XXX — always use real values or estimates if data is available.
+- End every response with a helpful follow-up.
+
+🧩 **Examples of Queries You Support**
+- “Identify 3 forex pairs showing reversal signs”
+- “Analyse XAUUSD on Daily and 4H”
+- “Which pairs broke above their daily highs?”
+- “Give intraday trade idea for EURUSD”
+- “Any economic news that may affect markets today?”
+- “What’s the best call option for AAPL this week?”
+- “Compare Apple vs Google as long-term picks”
+- “What is RSI and how to use it?”
 
 🎯 **Tone**
 - Friendly, sharp, and intelligent.
 - No fluff, but approachable.
 - Adjust depth based on user signals (beginner vs. advanced).
 
-🔥 **Examples You Support**
-- “Tell me the best high-probability options strategy for Tesla right now”
-- “What is a bull flag and how to trade it?”
-- “I’m 25. I want to retire with $1M. How should I invest?”
-- “Compare Apple vs Google as long-term picks”
-- “Explain CPI and how it affects markets”
-- “Give me 3 swing trades under $50 with good technical setups”
+---
 
-Your goal: Be the smartest, most helpful financial assistant in the world — and make users smarter traders/investors with every message.
+🔔 *For personalized guidance or a deeper portfolio review, you can always connect with a [Valour Wealth Analyst](https://valourwealth.com).*
 `;
 
 export async function* streamChatResponse(

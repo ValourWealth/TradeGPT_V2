@@ -861,8 +861,12 @@ export async function handleChatAction(action: string, symbolOrPair: string) {
 
   try {
     if (isForexPair) {
-      alphaData = await fetchForexRate(symbolOrPair);
-      userPrompt = getForexTradeIdeasPrompt(symbolOrPair);
+      const rawData = await fetchForexRate(symbolOrPair);
+      const match = rawData.match(/Close:\s*([\d.]+)/);
+      const closeRate = match ? match[1] : "Unavailable";
+
+      userPrompt = getForexTradeIdeasPrompt(symbolOrPair, closeRate);
+      alphaData = rawData;
     } else {
       alphaData = await fetchAlphaVantageData(symbolOrPair);
     }
@@ -947,7 +951,10 @@ Beta: ${ov.Beta}
 `;
 }
 
-export function getForexTradeIdeasPrompt(pair: string): string {
+export function getForexTradeIdeasPrompt(
+  pair: string,
+  liveRate: string
+): string {
   const normalizedPair = pair
     .toUpperCase()
     .replace(/\s/g, "")
@@ -963,7 +970,9 @@ You are TradeGPT, a professional forex strategist.
 Using the latest forex data for ${normalizedPair}, generate a clean, professional forex trade idea breakdown in the following format:
 
 📊 Forex Trade Ideas – ${normalizedPair}
-As of: [today's date] | Live Rate: (auto from API)
+// As of: [today's date] | Live Rate: (auto from API)
+As of: ${new Date().toLocaleDateString()} | Live Rate: ${liveRate}
+
 
 🔹 Summary
 - Trend: (brief trend description)

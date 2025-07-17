@@ -403,7 +403,11 @@ Respond with insights. If it's Forex, include rate commentary, trends, and econo
     abortControllerRef.current = new AbortController();
     let fullResponse = "";
 
-    for await (const chunk of streamChatResponse(content, detectedTickers[0], systemPrompt)) {
+    // for await (const chunk of streamChatResponse(content, detectedTickers[0], systemPrompt)) {
+    const symbolUsed = forexPair || detectedTickers[0] || "Market";
+
+    for await (const chunk of streamChatResponse(content, symbolUsed, systemPrompt)) {
+
       if (abortControllerRef.current?.signal.aborted) break;
 
       fullResponse += chunk;

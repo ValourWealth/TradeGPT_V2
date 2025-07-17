@@ -397,7 +397,12 @@ export async function fetchAlphaVantageData(ticker: string): Promise<string> {
     const latestNews =
       news.feed
         ?.slice(0, 3)
-        .map((n) => `- ${n.title} (${n.source})`)
+        .map(
+          (n) =>
+            `- ${n.title} (${n.source}, ${
+              n.time_published?.slice(0, 10) || "No date"
+            })`
+        )
         .join("\n") || "No news found.";
 
     return `
@@ -659,8 +664,6 @@ export async function* streamChatResponse(
     yield "Unable to fetch response currently. Please try again.";
   }
 }
-
-export { fetchAlphaVantageData };
 
 export function extractTickerFromMessage(message: string): string | null {
   const tickerPattern = /\b[A-Z]{2,5}\b/g;

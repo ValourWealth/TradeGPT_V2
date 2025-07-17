@@ -302,12 +302,66 @@ Tone: Professional but approachable. Keep the conversation intelligent, clear, a
 Always end with a helpful follow-up if appropriate (e.g., “Would you like an options breakdown too?” or “Let me know which ticker you’d like to explore.”)
 `;
 
+// export async function handleChatAction(action: string, symbolOrPair: string) {
+//   let userPrompt = "";
+//   let alphaData = "";
+//   let systemPrompt = "";
+
+//   // Step 1: Handle structured actions
+//   switch (action) {
+//     case "Price Chart":
+//       userPrompt = getPriceChartPrompt(symbolOrPair);
+//       break;
+//     case "Recent News":
+//       userPrompt = getRecentNewsPrompt(symbolOrPair);
+//       break;
+//     case "Trade Ideas":
+//       userPrompt = getTradeIdeasPrompt(symbolOrPair);
+//       break;
+//     case "Analysis":
+//       userPrompt = getFundamentalAnalysisPrompt(symbolOrPair);
+//       break;
+//     default:
+//       userPrompt = symbolOrPair; // Assume it's a free-text message
+//   }
+
+//   // Step 2: Decide if it's a ticker or forex pair
+//   const isForexPair = symbolOrPair.includes("/") && symbolOrPair.length === 7;
+
+//   if (isForexPair) {
+//     alphaData = await fetchForexRate(symbolOrPair); // USD/EUR etc.
+//   } else if (
+//     ["Price Chart", "Recent News", "Trade Ideas", "Analysis"].includes(action)
+//   ) {
+//     alphaData = await fetchAlphaVantageData(symbolOrPair); // stock
+//   }
+
+//   // Step 3: Build system prompt
+//   if (alphaData) {
+//     systemPrompt = `You are TradeGPT, a professional market analyst and trading assistant.
+// Use the following real-time data for your analysis of ${symbolOrPair}:
+
+// --- BEGIN LIVE DATA ---
+// ${alphaData}
+// --- END LIVE DATA ---
+
+// Be structured and insightful.`;
+//   } else {
+//     systemPrompt = universalSystemPrompt;
+//   }
+
+//   // Step 4: Stream chat
+//   streamChatResponse(userPrompt, symbolOrPair, systemPrompt);
+// }
+
 export async function handleChatAction(action: string, symbolOrPair: string) {
   let userPrompt = "";
   let alphaData = "";
   let systemPrompt = "";
 
-  // Step 1: Handle structured actions
+  const isForexPair = symbolOrPair.includes("/") && symbolOrPair.length === 7;
+
+  // Step 1: Determine the user's request intent
   switch (action) {
     case "Price Chart":
       userPrompt = getPriceChartPrompt(symbolOrPair);
@@ -322,34 +376,76 @@ export async function handleChatAction(action: string, symbolOrPair: string) {
       userPrompt = getFundamentalAnalysisPrompt(symbolOrPair);
       break;
     default:
-      userPrompt = symbolOrPair; // Assume it's a free-text message
+      userPrompt = symbolOrPair; // Free text or unknown command
   }
 
-  // Step 2: Decide if it's a ticker or forex pair
-  const isForexPair = symbolOrPair.includes("/") && symbolOrPair.length === 7;
-
-  if (isForexPair) {
-    alphaData = await fetchForexRate(symbolOrPair); // USD/EUR etc.
-  } else if (
-    ["Price Chart", "Recent News", "Trade Ideas", "Analysis"].includes(action)
-  ) {
-    alphaData = await fetchAlphaVantageData(symbolOrPair); // stock
+  // Step 2: Fetch real-time data first
+  try {
+    if (isForexPair) {
+      alphaData = await fetchForexRate(symbolOrPair);
+    } else {
+      alphaData = await fetchAlphaVantageData(symbolOrPair); // You'll need to define this
+    }
+  } catch (error) {
+    console.error("AlphaVantage fetch error:", error);
   }
 
-  // Step 3: Build system prompt
+  // Step 3: Set system prompt (prefer live data version)
   if (alphaData) {
-    systemPrompt = `You are TradeGPT, a professional market analyst and trading assistant.
+    systemPrompt = `
+You are TradeGPT, a professional market analyst and trading assistant.
+
 Use the following real-time data for your analysis of ${symbolOrPair}:
 
 --- BEGIN LIVE DATA ---
 ${alphaData}
 --- END LIVE DATA ---
 
-Be structured and insightful.`;
+Summarize this data intelligently, and respond in the usual TradeGPT format with structured sections and real numbers. Do not mention the raw data dump — interpret it naturally.
+`;
   } else {
     systemPrompt = universalSystemPrompt;
   }
 
-  // Step 4: Stream chat
+  // Step 4: Stream chat with real-time data included
   streamChatResponse(userPrompt, symbolOrPair, systemPrompt);
+}
+
+async function fetchAlphaVantageData(ticker: string): Promise<string> {
+  const apiKey = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_KEY;
+
+  const quoteRes = await fetch(
+    `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${apiKey}`
+  );
+  const overviewRes = await fetch(
+    `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${apiKey}`
+  );
+
+  const quoteJson = await quoteRes.json();
+  const overviewJson = await overviewRes.json();
+
+  const quote = quoteJson["Global Quote"];
+  const ov = overviewJson;
+
+  return `
+Latest Stock Quote for ${ticker}:
+Price: $${quote["05. price"]}
+Change: ${quote["10. change percent"]}
+Open: $${quote["02. open"]}
+High: $${quote["03. high"]}
+Low: $${quote["04. low"]}
+Volume: ${quote["06. volume"]}
+Previous Close: $${quote["08. previous close"]}
+
+Company Overview:
+Name: ${ov.Name}
+Sector: ${ov.Sector}
+Market Cap: $${ov.MarketCapitalization}
+PE Ratio: ${ov.PERatio}
+EPS: ${ov.EPS}
+ROE: ${ov.ReturnOnEquityTTM}%
+Debt/Equity: ${ov.DebtEquityRatio}
+Dividend Yield: ${ov.DividendYield}
+Beta: ${ov.Beta}
+`;
 }

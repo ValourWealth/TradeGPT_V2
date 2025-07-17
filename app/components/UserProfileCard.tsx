@@ -357,21 +357,18 @@
 //   );
 // }
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { 
-  User, 
-  Mail, 
-  MapPin, 
-  Phone, 
-  Crown, 
-  Cloud, 
-  X,
-  Edit3,
+import {
+  Cloud,
   Globe,
-  Star,
-  LogOut
+  LogOut,
+  Mail,
+  MapPin,
+  Phone,
+  User,
+  X
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function EnhancedUserProfile() {
   const [isOpen, setIsOpen] = useState(false);
@@ -379,8 +376,8 @@ export default function EnhancedUserProfile() {
   
   // Mock user data based on the profile shown
   const userData = {
-    username: "prode",
-    email: "prode@gmail.com",
+    username: "user",
+    email: "example@gmail.com",
     // subscription: "platinum",
     country: "American Samoa",
     // state: "ejrhrstn",

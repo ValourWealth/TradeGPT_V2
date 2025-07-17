@@ -361,36 +361,54 @@ export async function handleChatAction(action: string, symbolOrPair: string) {
 
   const isForexPair = symbolOrPair.includes("/") && symbolOrPair.length === 7;
 
-  // Step 1: Determine the user's request intent
-  switch (action) {
-    case "Price Chart":
-      userPrompt = getPriceChartPrompt(symbolOrPair);
-      break;
-    case "Recent News":
-      userPrompt = getRecentNewsPrompt(symbolOrPair);
-      break;
-    case "Trade Ideas":
-      userPrompt = getTradeIdeasPrompt(symbolOrPair);
-      break;
-    case "Analysis":
-      userPrompt = getFundamentalAnalysisPrompt(symbolOrPair);
-      break;
-    default:
-      userPrompt = symbolOrPair; // Free text or unknown command
-  }
-
-  // Step 2: Fetch real-time data first
+  // ✅ STEP 1: Fetch real-time data first
   try {
     if (isForexPair) {
       alphaData = await fetchForexRate(symbolOrPair);
     } else {
-      alphaData = await fetchAlphaVantageData(symbolOrPair); // You'll need to define this
+      alphaData = await fetchAlphaVantageData(symbolOrPair);
     }
   } catch (error) {
     console.error("AlphaVantage fetch error:", error);
   }
 
-  // Step 3: Set system prompt (prefer live data version)
+  // ✅ STEP 2: Build userPrompt
+  if (isForexPair) {
+    // 🟢 THIS IS WHERE YOU INSERT YOUR NEW LOGIC:
+    userPrompt = `
+You are TradeGPT, a professional forex strategist. Based on the latest FX data for ${symbolOrPair}, generate a structured forex pair breakdown.
+
+Include:
+- Summary (trend, policy differentials, risk sentiment)
+- Technical Setup (current price, support/resistance, indicators)
+- Trade Idea (direction, entry, stop loss, target, risk/reward)
+- Risk Notes (what events/data can affect this setup)
+
+Use real numbers from live data below. Do not include the raw data in the output. Present in a clean professional style.
+
+Pair: ${symbolOrPair}
+    `;
+  } else {
+    // 🟢 Stock-related actions
+    switch (action) {
+      case "Price Chart":
+        userPrompt = getPriceChartPrompt(symbolOrPair);
+        break;
+      case "Recent News":
+        userPrompt = getRecentNewsPrompt(symbolOrPair);
+        break;
+      case "Trade Ideas":
+        userPrompt = getTradeIdeasPrompt(symbolOrPair);
+        break;
+      case "Analysis":
+        userPrompt = getFundamentalAnalysisPrompt(symbolOrPair);
+        break;
+      default:
+        userPrompt = symbolOrPair; // Free text
+    }
+  }
+
+  // ✅ STEP 3: System Prompt
   if (alphaData) {
     systemPrompt = `
 You are TradeGPT, a professional market analyst and trading assistant.
@@ -407,7 +425,7 @@ Summarize this data intelligently, and respond in the usual TradeGPT format with
     systemPrompt = universalSystemPrompt;
   }
 
-  // Step 4: Stream chat with real-time data included
+  // ✅ STEP 4: Stream response
   streamChatResponse(userPrompt, symbolOrPair, systemPrompt);
 }
 
